@@ -4,6 +4,7 @@
 #define BS_Size 7
 #define num_dimensions 3
 
+//store orbital info
 struct Orbital {
     double primC, expC;
     int angular_momentum_vector[num_dimensions];
@@ -53,8 +54,8 @@ void get_geom_details(struct Orbital orbital_array[BS_Size], FILE *geom_pointer)
             additional_orbitals = 1; //just 2S for H
         }
         
+        //copy this information to the other orbitals on the same atom
         for(int i = 1; i <= additional_orbitals; i++){
-            //copy info to orbitals on the same atom
             orbital_array[orbital_idx+i].parent_atom_Z = orbital_array[orbital_idx].parent_atom_Z;
             orbital_array[orbital_idx+i].center[0] = orbital_array[orbital_idx].center[0];
             orbital_array[orbital_idx+i].center[1] = orbital_array[orbital_idx].center[1];
@@ -63,8 +64,10 @@ void get_geom_details(struct Orbital orbital_array[BS_Size], FILE *geom_pointer)
             if(i > 1){ //This only triggers for the p orbitals. Not worrying about d orbitals yet :)
                 //correct the angular momentum vector
                 orbital_array[orbital_idx+i].angular_momentum_vector[i-2] = 1;
+                // Otherwise they can stay zeros for the s orbitals
             }
         }
+        //now we jump to the next orbital that was not covered previously.
         orbital_idx += additional_orbitals;
     }
 }
