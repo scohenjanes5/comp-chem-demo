@@ -5,6 +5,7 @@
 #define Num_Orbitals 9
 #define num_dimensions 3
 
+//store orbital info
 struct Orbital {
     double primC, expC;
     int angular_momentum_vector[num_dimensions];
@@ -61,6 +62,7 @@ void get_geom_details(struct Orbital orbital_array[BS_Size], FILE *geom_pointer)
         }
         orbital_array[orbital_idx].parent_atom_idx = atom_idx;
         
+        //copy this information to the other orbitals on the same atom
         for(int i = 1; i <= additional_orbitals; i++){
             //copy info to orbitals on the same atom
             orbital_array[orbital_idx+i].parent_atom_idx = atom_idx;
@@ -72,8 +74,11 @@ void get_geom_details(struct Orbital orbital_array[BS_Size], FILE *geom_pointer)
             if(i > 1){ //This only triggers for the p orbitals. Not worrying about d orbitals yet :)
                 //correct the angular momentum vector
                 orbital_array[orbital_idx+i].angular_momentum_vector[i-2] = 1;
+                // Otherwise they can stay zeros for the s orbitals
             }
         }
+
+        //now we jump to the next orbital that was not covered previously.
         orbital_idx += additional_orbitals+1;
         atom_idx++;
     }
@@ -95,6 +100,7 @@ void orbital_info(struct Orbital orb, int idx){
     printf("it is located at coordinates: (");
     for (int j = 0; j < num_dimensions; j++){
         printf(" %lf",orb.center[j]);
+
     }
     printf(" )\n");
     printf("it is on atom #%d, which has atomic number %d\n", orb.parent_atom_idx, orb.parent_atom_Z);
