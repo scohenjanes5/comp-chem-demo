@@ -12,17 +12,30 @@ struct Orbital {
     int parent_atom_Z, parent_atom_idx;
 } orbital_array[Num_Orbitals];
 
-// void get_geom_details(struct Orbital *orbital_array[BS_Size], FILE *geom_pointer);
 void orbital_info(struct Orbital orb, int idx);
+void get_geom_details(struct Orbital orbital_array[BS_Size], FILE *geom_pointer);
 
-int main() {
+int main(){
     //get info from files.
     //geometry
     FILE *geom_pointer;
     geom_pointer = fopen("water_wolfram.xyz", "r");
+    get_geom_details(orbital_array, geom_pointer);
 
-    // get_geom_details(&orbital_array[BS_Size], geom_pointer);
+    // check to see angular momentum vectors are correct.
+    for (int i = 0; i < BS_Size; i++){
+        printf("orbital %d has angular momentum vector: {", i+1);
+        for (int j = 0; j < num_dimensions; j++){
+            printf(" %d",orbital_array[i].angular_momentum_vector[j]);
+        }
+        printf(" }\n");
+    }
 
+    return 0;
+}
+
+void get_geom_details(struct Orbital orbital_array[BS_Size], FILE *geom_pointer){
+        
     if (NULL == geom_pointer){
         printf("file can't be opened\n");
     }
@@ -30,18 +43,21 @@ int main() {
     int orbital_idx = 0;
     int atom_idx = 0;
     int additional_orbitals;
-    while (!feof(geom_pointer)) {
+    // Reading coords and atomic number from file
+    while (!feof(geom_pointer)){
         printf("atom number %d\n", atom_idx);
         fscanf(geom_pointer, "%d %lf %lf %lf", 
             &orbital_array[orbital_idx].parent_atom_Z, &orbital_array[orbital_idx].center[0], 
             &orbital_array[orbital_idx].center[1], &orbital_array[orbital_idx].center[2]
         );
+
         printf("atom %d has atomic number %d\n",atom_idx, orbital_array[orbital_idx].parent_atom_Z);
+        
         if(orbital_array[orbital_idx].parent_atom_Z > 2){
             //4 more orbitals for n=2
             additional_orbitals = 4;
         } else {
-            additional_orbitals = 1; //jus;t 2S for H
+            additional_orbitals = 1; //just 2S for H
         }
         orbital_array[orbital_idx].parent_atom_idx = atom_idx;
         
@@ -67,16 +83,6 @@ int main() {
         orbital_info(orbital_array[i], i);
     }
 
-    // check to see angular momentum vectors are correct.
-    // for (int i = 0; i < Num_Orbitals; i++){
-    //     printf("orbital %d has angular momentum vector: {", i+1);
-    //     for (int j = 0; j < num_dimensions; j++){
-    //         printf(" %d",orbital_array[i].angular_momentum_vector[j]);
-    //     }
-    //     printf(" }\n");
-    // }
-
-    return 0;
 }
 
 void orbital_info(struct Orbital orb, int idx){
@@ -92,48 +98,3 @@ void orbital_info(struct Orbital orb, int idx){
     printf(" )\n");
     printf("it is on atom #%d, which has atomic number %d\n", orb.parent_atom_idx, orb.parent_atom_Z);
 }
-
-
-// void get_geom_details(struct Orbital *orbital_array[BS_Size], FILE *geom_pointer){
-//     int orbital_idx = 0;
-//     if (NULL == geom_pointer){
-//         printf("file can't be opened\n");
-//     }
-
-//     int additional_orbitals;
-//     while (!feof(geom_pointer)) {
-//         fscanf(geom_pointer, "%d %lf %lf %lf", 
-//             &orbital_array[orbital_idx]->parent_atom_Z, &orbital_array[orbital_idx]->center[0], 
-//             &orbital_array[orbital_idx]->center[1], &orbital_array[orbital_idx]->center[2]
-//         );
-        
-//         if(orbital_array[orbital_idx]->parent_atom_Z > 2){
-//             //4 more orbitals for n=2
-//             additional_orbitals = 4;
-//         } else {
-//             additional_orbitals = 1; //jus;t 2S for H
-//         }
-        
-//         for(int i = 1; i <= additional_orbitals; i++){
-//             //copy info to orbitals on the same atom
-//             orbital_array[orbital_idx+i]->parent_atom_Z = orbital_array[orbital_idx]->parent_atom_Z;
-//             orbital_array[orbital_idx+i]->center[0] = orbital_array[orbital_idx]->center[0];
-//             orbital_array[orbital_idx+i]->center[1] = orbital_array[orbital_idx]->center[1];
-//             orbital_array[orbital_idx+i]->center[2] = orbital_array[orbital_idx]->center[2];
-
-//             if(i > 1){ //This only triggers for the p orbitals. Not worrying about d orbitals yet :)
-//                 //correct the angular momentum vector
-//                 orbital_array[orbital_idx+i]->angular_momentum_vector[i-2] = 1;
-//             }
-//         }
-//         orbital_idx += additional_orbitals;
-//     }
-
-//     for (int i = 0; i < BS_Size; i++){
-//         printf("orbital %d has angular momentum vector: {", i+1);
-//         for (int j = 0; j < num_dimensions; j++){
-//             printf(" %d",orbital_array[i]->angular_momentum_vector[j]);
-//         }
-//         printf(" }\n");
-//     }
-// }
