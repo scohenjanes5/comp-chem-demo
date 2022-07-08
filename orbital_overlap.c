@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <math.h>
 
 #define NUMATOMS 3
 #define BS_Size 7
@@ -7,15 +8,16 @@
 
 //store orbital info
 struct Orbital {
-    double primC[num_dimensions], expC[num_dimensions];
-    int angular_momentum_vector[num_dimensions];
-    double center[num_dimensions];
-    int parent_atom_Z, parent_atom_idx;
+    double primC[num_dimensions], expC[num_dimensions], NormC[num_dimensions], center[num_dimensions];
+    int angular_momentum_vector[num_dimensions], parent_atom_Z, parent_atom_idx;
 } orbital_array[Num_Orbitals];
 
 void orbital_info(struct Orbital orb, int idx);
 void get_geom_details(struct Orbital orbital_array[BS_Size], FILE *geom_pointer);
 void get_coefs(struct Orbital orbital_array[BS_Size], FILE *coef_pointer);
+void calc_norm_const(struct Orbital orbital_array[Num_Orbitals]);
+double get_norm_denominator(int angular_momentum_vector[num_dimensions]);
+int factorial(int n);
 
 int main(){
     //get info from files.
@@ -25,9 +27,10 @@ int main(){
     coef_pointer = fopen("cont_exp_coefs.csv", "r");
     get_geom_details(orbital_array, geom_pointer);
     get_coefs(orbital_array, coef_pointer);
+    calc_norm_const(orbital_array);
     // check out all orbitals in detail
     for (int i = 0; i < Num_Orbitals; i++){
-        orbital_info(orbital_array[i], i);
+        // orbital_info(orbital_array[i], i);
     }
 
     // check to see angular momentum vectors are correct.
@@ -120,19 +123,13 @@ void get_coefs(struct Orbital orbital_array[BS_Size], FILE *coef_pointer){
             }
             continue;
         }
-        if (orbital_array[i].parent_atom_Z == 8 && i % 4 == 0 && Num_Orbitals-i > 4){
+        if (orbital_array[i].parent_atom_Z == 8 && i % 4 == 0 && Num_Orbitals-i >= 5){ //is there potentially more room for another atom?
             //be flexible so more atoms can be added later.
             for(int j = 0; j < num_dimensions; j++){
-                orbital_array[i].primC[j] = basis_array[j + num_dimensions * 2][0]; //assign 1s orbital coefs here
-                orbital_array[i].expC[j] = basis_array[j + num_dimensions * 2][1]; // ^ and here.
-                orbital_array[i+1].primC[j] = basis_array[j + num_dimensions * 3][0]; //now assign 2s coefs here
-                orbital_array[i+1].expC[j] = basis_array[j + num_dimensions * 3][1]; //and here too.
-                orbital_array[i+2].primC[j] = basis_array[j + num_dimensions * 4][0]; //now assign 2px coefs here
-                orbital_array[i+2].expC[j] = basis_array[j + num_dimensions * 4][1]; //and here too.
-                orbital_array[i+3].primC[j] = basis_array[j + num_dimensions * 5][0]; //now assign 2py coefs here
-                orbital_array[i+3].expC[j] = basis_array[j + num_dimensions * 5][1]; //and here too.
-                orbital_array[i+4].primC[j] = basis_array[j + num_dimensions * 6][0]; //now assign 2pz coefs here
-                orbital_array[i+4].expC[j] = basis_array[j + num_dimensions * 6][1]; //and here too.
+                for(int k = 0; k < 5; k++){
+                    orbital_array[i+k].primC[j] = basis_array[j + num_dimensions * (2+k)][0]; //now assign O's coeffs here and next line
+                    orbital_array[i+k].expC[j] = basis_array[j + num_dimensions * (2+k)][1]; //skip the H and previously read O coeffs.
+                }
             }
         }
     }
@@ -153,8 +150,62 @@ void orbital_info(struct Orbital orb, int idx){
     printf("it is located at coordinates: (");
     for (int j = 0; j < num_dimensions; j++){
         printf(" %lf",orb.center[j]);
-
     }
     printf(" )\n");
+    printf("it has these normalization constants:");
+    for (int j = 0; j < num_dimensions; j++){
+        printf(" %lf",orb.NormC[j]);
+    }
+    printf("\n");
     printf("it is on atom #%d, which has atomic number %d\n\n----------------\n", orb.parent_atom_idx, orb.parent_atom_Z);
+}
+
+int factorial(int n){
+    int fact = 1;
+    for (int i = n; i >= -1; i--){
+        if(i == 0 || i == -1){
+            fact *= 1;
+        } else {
+            fact *= i;
+        }
+    }
+    return fact;
+}
+
+double get_norm_denominator(int angular_momentum_vector[num_dimensions]){
+    double den;
+    int part, fact[num_dimensions];
+    //each component of the ang. mom. vector is used.
+    for(int i = 0; i < num_dimensions; i++){
+        part = 2*angular_momentum_vector[i]-1;
+        fact[i] = factorial(part);
+        fact[i] = factorial(fact[i]);
+    }
+    //the denominator is the square root of the product of all double factorials
+    den = sqrt(fact[0] * fact[1] * fact[2]);
+    return den;
+}
+
+void calc_norm_const(struct Orbital orbital_array[Num_Orbitals]){
+    double prefactor, angular_part, alpha, denominator;
+    int sum_angular_coords = 0;
+    //for each orbital
+    for (int i = 0; i < Num_Orbitals; i++){
+        //calculate the sum of the angular momentum vector as this is used in each calculation of the normalization constant.
+        for (int j = 0; j < num_dimensions; j++){
+            sum_angular_coords += orbital_array[i].angular_momentum_vector[j];
+        }
+
+        //calculate the denominator. This is the same regardless of alpha.
+        denominator = get_norm_denominator(orbital_array[i].angular_momentum_vector);
+
+        // finally, calculate the normalization constant for each dimension.
+        for (int j = 0; j < num_dimensions; j++){
+            alpha = orbital_array[i].expC[j];
+            angular_part = pow(4 * alpha, sum_angular_coords/2)/denominator;
+            prefactor = pow(2 * alpha / M_PI, 3/4);
+            orbital_array[i].NormC[j] = prefactor * angular_part;
+            printf("normalization constant: %lf\n",orbital_array[i].NormC[j]);
+        }
+    }     
 }
