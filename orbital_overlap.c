@@ -94,37 +94,52 @@ void get_coefs(struct Orbital orbital_array[BS_Size], FILE *coef_pointer){
         printf("file can't be opened\n");
     }
 
-    double basis_array[BS_Size * num_dimensions * 2]; //size is total num of coeffs.
+    double basis_array[BS_Size * num_dimensions][2]; //size is total num of coeffs.
+    //dimension 0 is leading coeffs and dimension 1 is exponential coeffs.
 
     int BS_idx = 0;
     while (!feof(coef_pointer)){
         fscanf(coef_pointer, "%lf %lf %lf %lf %lf %lf", 
-            &basis_array[BS_idx], &basis_array[BS_idx+1], &basis_array[BS_idx+2], //contraction coefs
-            &basis_array[BS_idx+3], &basis_array[BS_idx+4], &basis_array[BS_idx+5] //exponential coefs
+            &basis_array[BS_idx][0], &basis_array[BS_idx+1][0], &basis_array[BS_idx+2][0], //contraction coefs
+            &basis_array[BS_idx][1], &basis_array[BS_idx+1][1], &basis_array[BS_idx+2][1] //exponential coefs
         );
-        BS_idx += 6; //go to next block of empty entries.
+        BS_idx += 3; //go to next block of empty entries.
     }
     //the basis is defined as H1s H2s O1s O2s O2p... so we can just use direct assignment.
+    //The checks within the if statements deal with each atom individually since this is closer to being 
+    //extendible to larger systems.
     for (int i = 0; i < Num_Orbitals; i++){
         if (orbital_array[i].parent_atom_Z == 1 && i % 2 == 0){
             //we can't yet distinguish between 1s and 2s so we should assign coefs to both now.
+            //The two actually have identical coeffs, but it is still probably a good idea to assign them independently.
             for(int j = 0; j < num_dimensions; j++){
-                orbital_array[i].primC[j] = basis_array[j]; //assign 1s orbital coefs here
-                orbital_array[i].expC[j] = basis_array[num_dimensions + j]; // ^ and here.
-                orbital_array[i+1].primC[j] = basis_array[j + num_dimensions * 2]; //now assign 2s coefs here
-                orbital_array[i+1].expC[j] = basis_array[j + num_dimensions * 2 + num_dimensions]; //and here too.
+                orbital_array[i].primC[j] = basis_array[j][0]; //assign 1s orbital coefs here
+                orbital_array[i].expC[j] = basis_array[j][1]; // ^ and here.
+                orbital_array[i+1].primC[j] = basis_array[j + num_dimensions][0]; //now assign 2s coefs here
+                orbital_array[i+1].expC[j] = basis_array[j + num_dimensions][1]; //and here too.
             }
-            printf("done with a hydrogen atom's orbitals\n");
             continue;
         }
-        if (orbital_array[i].parent_atom_Z == 8){
-            printf("this orbital is attached to oxygen\n");
+        if (orbital_array[i].parent_atom_Z == 8 && i % 4 == 0 && Num_Orbitals-i > 4){
+            //be flexible so more atoms can be added later.
+            for(int j = 0; j < num_dimensions; j++){
+                orbital_array[i].primC[j] = basis_array[j + num_dimensions * 2][0]; //assign 1s orbital coefs here
+                orbital_array[i].expC[j] = basis_array[j + num_dimensions * 2][1]; // ^ and here.
+                orbital_array[i+1].primC[j] = basis_array[j + num_dimensions * 3][0]; //now assign 2s coefs here
+                orbital_array[i+1].expC[j] = basis_array[j + num_dimensions * 3][1]; //and here too.
+                orbital_array[i+2].primC[j] = basis_array[j + num_dimensions * 4][0]; //now assign 2px coefs here
+                orbital_array[i+2].expC[j] = basis_array[j + num_dimensions * 4][1]; //and here too.
+                orbital_array[i+3].primC[j] = basis_array[j + num_dimensions * 5][0]; //now assign 2py coefs here
+                orbital_array[i+3].expC[j] = basis_array[j + num_dimensions * 5][1]; //and here too.
+                orbital_array[i+4].primC[j] = basis_array[j + num_dimensions * 6][0]; //now assign 2pz coefs here
+                orbital_array[i+4].expC[j] = basis_array[j + num_dimensions * 6][1]; //and here too.
+            }
         }
     }
 }
 
 void orbital_info(struct Orbital orb, int idx){
-    printf("orbital %d has angular momentum vector: {", idx+1);
+    printf("orbital %d has angular momentum vector: {", idx);
     for (int j = 0; j < num_dimensions; j++){
         printf(" %d", orb.angular_momentum_vector[j]);
     }
