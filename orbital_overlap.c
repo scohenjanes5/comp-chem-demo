@@ -67,12 +67,4 @@ void get_geom_details(struct Orbital orbital_array[BS_Size], FILE *geom_pointer)
         }
         orbital_idx += additional_orbitals;
     }
-
-    // for (int i = 0; i < BS_Size; i++){
-    //     printf("orbital %d has angular momentum vector: {", i+1);
-    //     for (int j = 0; j < num_dimensions; j++){
-    //         printf(" %d",orbital_array[i].angular_momentum_vector[j]);
-    //     }
-    //     printf(" }\n");
-    // }
 }
