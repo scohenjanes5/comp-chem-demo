@@ -23,19 +23,19 @@ int main(){
     get_geom_details(orbital_array, geom_pointer);
 
     // check to see angular momentum vectors are correct.
-    for (int i = 0; i < BS_Size; i++){
-        printf("orbital %d has angular momentum vector: {", i+1);
-        for (int j = 0; j < num_dimensions; j++){
-            printf(" %d",orbital_array[i].angular_momentum_vector[j]);
-        }
-        printf(" }\n");
-    }
+    // for (int i = 0; i < BS_Size; i++){
+    //     printf("orbital %d has angular momentum vector: {", i+1);
+    //     for (int j = 0; j < num_dimensions; j++){
+    //         printf(" %d",orbital_array[i].angular_momentum_vector[j]);
+    //     }
+    //     printf(" }\n");
+    // }
 
     return 0;
 }
 
 void get_geom_details(struct Orbital orbital_array[BS_Size], FILE *geom_pointer){
-        
+
     if (NULL == geom_pointer){
         printf("file can't be opened\n");
     }
@@ -74,9 +74,10 @@ void get_geom_details(struct Orbital orbital_array[BS_Size], FILE *geom_pointer)
                 orbital_array[orbital_idx+i].angular_momentum_vector[i-2] = 1;
             }
         }
-        orbital_idx += additional_orbitals;
+        orbital_idx += additional_orbitals+1;
         atom_idx++;
     }
+    printf("\n");
 
     // check out all orbitals in detail
     for (int i = 0; i < Num_Orbitals; i++){
