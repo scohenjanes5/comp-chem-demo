@@ -21,6 +21,7 @@ int factorial(int n);
 double primitive_overlap(double alpha, double beta, double center_a[3], double center_b[3], int ang_mom_a[3], int ang_mom_b[3]);
 double little_s(int ang_coord_a, int ang_coord_b, double alpha, double beta, double center_a_coord, double center_b_coord);
 double orbital_overlap(struct Orbital orbital_a, struct Orbital orbital_b);
+void Calc_BS_OV_Matrix(struct Orbital orbital_array[Num_Orbitals], double overlap_matrix[BS_Size][BS_Size], int indicies[BS_Size]);
 
 int main(){
     //get info from files.
@@ -41,8 +42,16 @@ int main(){
     // printf("Ov of the two primatives is: %lf\n", OV);
 
     //overlap between orbital 0 and 8 (H1_1s and O_p_z)
-    double INTEGRAL = orbital_overlap(orbital_array[0], orbital_array[8]);
-    printf("Overlap integral is %lf\n",INTEGRAL);
+    // double INTEGRAL = orbital_overlap(orbital_array[0], orbital_array[8]);
+    // printf("Overlap integral is %lf\n",INTEGRAL);
+
+    //overlap between orbital 2 and 3 (H1_1s and H1_2s)
+    double INTEGRAL = orbital_overlap(orbital_array[0], orbital_array[7]);
+    printf("Overlap integral is %lf\n", INTEGRAL);
+
+    double BS_overlap_matrix[BS_Size][BS_Size];
+    int included_indicies[BS_Size] = {0,3,4,5,6,7,8};
+    Calc_BS_OV_Matrix(orbital_array, BS_overlap_matrix, included_indicies);
 
     return 0;
 }
@@ -159,7 +168,7 @@ void orbital_info(struct Orbital orb, int idx){
         printf(" %lf", orb.NormC[j]);
     }
     printf("\n");
-    printf("it is on atom #%d, which has atomic number %d\n\n----------------\n", orb.parent_atom_idx, orb.parent_atom_Z);
+    printf("it is on atom #%d, which has atomic number %d\n----------------\n\n", orb.parent_atom_idx, orb.parent_atom_Z);
 }
 
 int factorial(int n){
@@ -268,9 +277,27 @@ double orbital_overlap(struct Orbital orbital_a, struct Orbital orbital_b){
     double integral = 0;
     for(int i = 0; i < num_dimensions; i++){
         for(int j = 0; j < num_dimensions; j++){
-            double ov = primitive_overlap(orbital_a.expC[i],orbital_b.expC[j],orbital_a.center,orbital_b.center,orbital_a.angular_momentum_vector,orbital_b.angular_momentum_vector);
+            double ov = primitive_overlap(orbital_a.expC[i], orbital_b.expC[j], orbital_a.center, orbital_b.center, orbital_a.angular_momentum_vector, orbital_b.angular_momentum_vector);
             integral += orbital_a.NormC[i] * orbital_b.NormC[j] * orbital_a.primC[i] * orbital_b.primC[j] * ov;
+            // printf("ov is %lf. Integral is now %lf after using %lf %lf %lf %lf\n", ov, integral, orbital_a.NormC[i], orbital_b.NormC[j], orbital_a.primC[i], orbital_b.primC[j]);
         }
     }
     return integral;
+}
+
+void Calc_BS_OV_Matrix(struct Orbital orbital_array[Num_Orbitals], double overlap_matrix[BS_Size][BS_Size], int indicies[BS_Size]){
+    //Since there are 9 orbitals in the sytem and 7 in the BS, exclude some orbitals to avoid repeats.
+    struct Orbital used_orbitals[BS_Size];
+    for (int i = 0; i < BS_Size; i++){
+        int next_idx = indicies[i];
+        used_orbitals[i] = orbital_array[next_idx];
+    }
+    printf("overlap matrix:\n");
+    for(int i = 0; i < BS_Size; i++){
+        for(int j = 0; j < BS_Size; j++){
+            overlap_matrix[i][j] = orbital_overlap(used_orbitals[i], used_orbitals[j]);
+            printf("    %lf", overlap_matrix[i][j]);
+        }
+        printf("\n");
+    }
 }
