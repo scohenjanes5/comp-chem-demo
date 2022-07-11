@@ -18,8 +18,9 @@ void get_coefs(struct Orbital orbital_array[BS_Size], FILE *coef_pointer);
 void calc_norm_const(struct Orbital orbital_array[Num_Orbitals]);
 double get_norm_denominator(int angular_momentum_vector[num_dimensions]);
 int factorial(int n);
-double overlap(double alpha, double beta, double center_a[3], double center_b[3], int ang_mom_a[3], int ang_mom_b[3]);
+double primitive_overlap(double alpha, double beta, double center_a[3], double center_b[3], int ang_mom_a[3], int ang_mom_b[3]);
 double little_s(int ang_coord_a, int ang_coord_b, double alpha, double beta, double center_a_coord, double center_b_coord);
+double orbital_overlap(struct Orbital orbital_a, struct Orbital orbital_b);
 
 int main(){
     //get info from files.
@@ -35,9 +36,13 @@ int main(){
         orbital_info(orbital_array[i], i);
     }
 
-    //overlap between first primitive of orbital 0 (1s on H1) with orbital 8 (Pz on O)
-    double OV = overlap(orbital_array[0].expC[0], orbital_array[8].expC[0], orbital_array[0].center, orbital_array[8].center, orbital_array[0].angular_momentum_vector, orbital_array[8].angular_momentum_vector);
-    printf("Ov of the two primatives is: %lf\n", OV);
+    //overlap between first primitive of orbital 0 (1s_x on H1) with orbital 8 (Pz_z on O)
+    // double OV = primitive_overlap(orbital_array[0].expC[0], orbital_array[8].expC[0], orbital_array[0].center, orbital_array[8].center, orbital_array[0].angular_momentum_vector, orbital_array[8].angular_momentum_vector);
+    // printf("Ov of the two primatives is: %lf\n", OV);
+
+    //overlap between orbital 0 and 8 (H1_1s and O_p_z)
+    double INTEGRAL = orbital_overlap(orbital_array[0], orbital_array[8]);
+    printf("Overlap integral is %lf\n",INTEGRAL);
 
     return 0;
 }
@@ -211,7 +216,6 @@ double little_s(int ang_coord_a, int ang_coord_b, double alpha, double beta, dou
     double P, sum_ab;
 
     // printf("a: %d, b: %d\n", ang_coord_a, ang_coord_b);
-    
     if (ang_coord_a == 0 && ang_coord_b == 0){
         // printf("returning 1\n");
         return 1;
@@ -240,7 +244,7 @@ double little_s(int ang_coord_a, int ang_coord_b, double alpha, double beta, dou
     }
 }
 
-double overlap(double alpha, double beta, double center_a[3], double center_b[3], int ang_mom_a[3], int ang_mom_b[3]){
+double primitive_overlap(double alpha, double beta, double center_a[3], double center_b[3], int ang_mom_a[3], int ang_mom_b[3]){
     double EAB, exponent, dist_squared, Overlap;
     dist_squared = 0;   
     for (int i = 0; i < num_dimensions; i++){
@@ -258,6 +262,15 @@ double overlap(double alpha, double beta, double center_a[3], double center_b[3]
     }
 
     return Overlap;
-
 }
 
+double orbital_overlap(struct Orbital orbital_a, struct Orbital orbital_b){
+    double integral = 0;
+    for(int i = 0; i < num_dimensions; i++){
+        for(int j = 0; j < num_dimensions; j++){
+            double ov = primitive_overlap(orbital_a.expC[i],orbital_b.expC[j],orbital_a.center,orbital_b.center,orbital_a.angular_momentum_vector,orbital_b.angular_momentum_vector);
+            integral += orbital_a.NormC[i] * orbital_b.NormC[j] * orbital_a.primC[i] * orbital_b.primC[j] * ov;
+        }
+    }
+    return integral;
+}
