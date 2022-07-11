@@ -18,6 +18,8 @@ void get_coefs(struct Orbital orbital_array[BS_Size], FILE *coef_pointer);
 void calc_norm_const(struct Orbital orbital_array[Num_Orbitals]);
 double get_norm_denominator(int angular_momentum_vector[num_dimensions]);
 int factorial(int n);
+double overlap(double alpha, double beta, double center_a[3], double center_b[3], int ang_mom_a[3], int ang_mom_b[3]);
+double little_s(int ang_coord_a, int ang_coord_b, double alpha, double beta, double center_a_coord, double center_b_coord);
 
 int main(){
     //get info from files.
@@ -32,6 +34,10 @@ int main(){
     for (int i = 0; i < Num_Orbitals; i++){
         orbital_info(orbital_array[i], i);
     }
+
+    //overlap between first primitive of orbital 0 (1s on H1) with orbital 8 (Pz on O)
+    double OV = overlap(orbital_array[0].expC[0], orbital_array[8].expC[0], orbital_array[0].center, orbital_array[8].center, orbital_array[0].angular_momentum_vector, orbital_array[8].angular_momentum_vector);
+    printf("Ov of the two primatives is: %lf\n", OV);
 
     return 0;
 }
@@ -140,12 +146,12 @@ void orbital_info(struct Orbital orb, int idx){
     printf("\n");
     printf("it is located at coordinates: (");
     for (int j = 0; j < num_dimensions; j++){
-        printf(" %lf",orb.center[j]);
+        printf(" %lf", orb.center[j]);
     }
     printf(" )\n");
     printf("it has these normalization constants:");
     for (int j = 0; j < num_dimensions; j++){
-        printf(" %lf",orb.NormC[j]);
+        printf(" %lf", orb.NormC[j]);
     }
     printf("\n");
     printf("it is on atom #%d, which has atomic number %d\n\n----------------\n", orb.parent_atom_idx, orb.parent_atom_Z);
@@ -168,7 +174,7 @@ double get_norm_denominator(int angular_momentum_vector[num_dimensions]){
     int part, fact[num_dimensions];
     //each component of the ang. mom. vector is used.
     for(int i = 0; i < num_dimensions; i++){
-        part = 2*angular_momentum_vector[i]-1;
+        part = 2 * angular_momentum_vector[i] - 1;
         fact[i] = factorial(part);
         fact[i] = factorial(fact[i]);
     }
@@ -200,3 +206,58 @@ void calc_norm_const(struct Orbital orbital_array[Num_Orbitals]){
         }
     }     
 }
+
+double little_s(int ang_coord_a, int ang_coord_b, double alpha, double beta, double center_a_coord, double center_b_coord){
+    double P, sum_ab;
+
+    // printf("a: %d, b: %d\n", ang_coord_a, ang_coord_b);
+    
+    if (ang_coord_a == 0 && ang_coord_b == 0){
+        // printf("returning 1\n");
+        return 1;
+    }
+
+    sum_ab = alpha + beta;
+    P = (alpha*center_a_coord + beta*center_b_coord) / sum_ab;
+
+    if (ang_coord_a == 1 && ang_coord_b == 0){
+        // printf("Simple Case\n");
+        return -(center_a_coord - P);
+    }
+    if ( ang_coord_a != 1 && ang_coord_b == 0){ //recurrence index
+        double s_prev_a, s_prev_2_a;
+        s_prev_a = little_s(ang_coord_a - 1, 0, alpha, beta, center_a_coord, center_b_coord);
+        s_prev_2_a = little_s(ang_coord_a - 2, 0, alpha, beta, center_a_coord, center_b_coord);
+        // printf("Using intermediate values that use lower values of a: %lf and %lf\n", s_prev_a, s_prev_2_a);
+        return -(center_a_coord - P) * s_prev_a + ((ang_coord_a - 1) / (2*sum_ab)) * s_prev_2_a;
+    }
+    if ( ang_coord_b != 0 ){ //transfer
+        double s_xfer, s_prev_b;
+        s_xfer = little_s(ang_coord_a + 1, ang_coord_b - 1, alpha, beta, center_a_coord, center_b_coord);
+        s_prev_b = little_s(ang_coord_a, ang_coord_b - 1, alpha, beta, center_a_coord, center_b_coord);
+        // printf("Using intermediate values that use lower values of a: %lf and %lf\n", s_xfer, s_prev_b);
+        return s_xfer + (center_a_coord - center_b_coord) * s_prev_b;
+    }
+}
+
+double overlap(double alpha, double beta, double center_a[3], double center_b[3], int ang_mom_a[3], int ang_mom_b[3]){
+    double EAB, exponent, dist_squared, Overlap;
+    dist_squared = 0;   
+    for (int i = 0; i < num_dimensions; i++){
+        dist_squared += pow(center_a[i]-center_b[i], 2);
+    }
+    exponent = -(alpha * beta / (alpha + beta)) * dist_squared;
+    EAB = pow(M_E, exponent);
+
+    Overlap = EAB * pow((M_PI / (alpha + beta)), 1.5);
+    // printf("Overlap Coeff is %lf\n", Overlap);
+
+    for (int i = 0; i < num_dimensions; i++){
+        Overlap *= little_s(ang_mom_a[i], ang_mom_b[i], alpha, beta, center_a[i], center_b[i]);
+        // printf("After calculating s(%d), the Overlap Integral is %lf\n", i, Overlap);
+    }
+
+    return Overlap;
+
+}
+
