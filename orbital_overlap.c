@@ -30,17 +30,8 @@ int main(){
     calc_norm_const(orbital_array);
     // check out all orbitals in detail
     for (int i = 0; i < Num_Orbitals; i++){
-        // orbital_info(orbital_array[i], i);
+        orbital_info(orbital_array[i], i);
     }
-
-    // check to see angular momentum vectors are correct.
-    // for (int i = 0; i < BS_Size; i++){
-    //     printf("orbital %d has angular momentum vector: {", i+1);
-    //     for (int j = 0; j < num_dimensions; j++){
-    //         printf(" %d",orbital_array[i].angular_momentum_vector[j]);
-    //     }
-    //     printf(" }\n");
-    // }
 
     return 0;
 }
@@ -188,9 +179,10 @@ double get_norm_denominator(int angular_momentum_vector[num_dimensions]){
 
 void calc_norm_const(struct Orbital orbital_array[Num_Orbitals]){
     double prefactor, angular_part, alpha, denominator;
-    int sum_angular_coords = 0;
+    int sum_angular_coords;
     //for each orbital
     for (int i = 0; i < Num_Orbitals; i++){
+        sum_angular_coords = 0;
         //calculate the sum of the angular momentum vector as this is used in each calculation of the normalization constant.
         for (int j = 0; j < num_dimensions; j++){
             sum_angular_coords += orbital_array[i].angular_momentum_vector[j];
@@ -202,10 +194,9 @@ void calc_norm_const(struct Orbital orbital_array[Num_Orbitals]){
         // finally, calculate the normalization constant for each dimension.
         for (int j = 0; j < num_dimensions; j++){
             alpha = orbital_array[i].expC[j];
-            angular_part = pow(4 * alpha, sum_angular_coords/2)/denominator;
-            prefactor = pow(2 * alpha / M_PI, 3/4);
+            angular_part = pow((4 * alpha), (sum_angular_coords * 0.5)) / denominator;
+            prefactor = pow((2 * alpha / M_PI), 0.75 );
             orbital_array[i].NormC[j] = prefactor * angular_part;
-            printf("normalization constant: %lf\n",orbital_array[i].NormC[j]);
         }
     }     
 }
