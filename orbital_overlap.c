@@ -40,7 +40,7 @@ int main(){
     }
 
     //overlap between first primitive of orbital 0 (1s_x on H1) with orbital 8 (Pz_z on O)
-    // double OV = primitive_overlap(orbital_array[0].expC[0], orbital_array[8].expC[0], orbital_array[0].center, orbital_array[8].center, orbital_array[0].angular_momentum_vector, orbital_array[8].angular_momentum_vector);
+    // double OV = primitive_overlap(0, 0, orbital_array[0], orbital_array[8]]);
     // printf("Ov of the two primatives is: %lf\n", OV);
 
     //overlap between orbital 0 and 8 (H1_1s and O_p_z)
