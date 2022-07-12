@@ -18,10 +18,12 @@ void get_coefs(struct Orbital orbital_array[BS_Size], FILE *coef_pointer);
 void calc_norm_const(struct Orbital orbital_array[Num_Orbitals]);
 double get_norm_denominator(int angular_momentum_vector[num_dimensions]);
 int factorial(int n);
-double primitive_overlap(double alpha, double beta, double center_a[3], double center_b[3], int ang_mom_a[3], int ang_mom_b[3]);
+double primitive_overlap(int dim_a, int dim_b, struct Orbital orbital_a, struct Orbital orbital_b);
 double little_s(int ang_coord_a, int ang_coord_b, double alpha, double beta, double center_a_coord, double center_b_coord);
 double orbital_overlap(struct Orbital orbital_a, struct Orbital orbital_b);
 void Calc_BS_OV_Matrix(struct Orbital orbital_array[Num_Orbitals], double overlap_matrix[BS_Size][BS_Size], int indicies[BS_Size]);
+double little_k(double alpha, double beta, int a, int b);
+double kinetic_energy_integral(int dimension, struct Orbital orbital_a, struct Orbital orbital_b);
 
 int main(){
     //get info from files.
@@ -46,8 +48,8 @@ int main(){
     // printf("Overlap integral is %lf\n",INTEGRAL);
 
     //overlap between orbital 2 and 3 (H1_1s and H1_2s)
-    double INTEGRAL = orbital_overlap(orbital_array[0], orbital_array[7]);
-    printf("Overlap integral is %lf\n", INTEGRAL);
+    // double INTEGRAL = orbital_overlap(orbital_array[0], orbital_array[7]);
+    // printf("Overlap integral is %lf\n", INTEGRAL);
 
     double BS_overlap_matrix[BS_Size][BS_Size];
     int included_indicies[BS_Size] = {0,3,4,5,6,7,8};
@@ -253,11 +255,13 @@ double little_s(int ang_coord_a, int ang_coord_b, double alpha, double beta, dou
     }
 }
 
-double primitive_overlap(double alpha, double beta, double center_a[3], double center_b[3], int ang_mom_a[3], int ang_mom_b[3]){
+double primitive_overlap(int dim_a, int dim_b, struct Orbital orbital_a, struct Orbital orbital_b){
+    double alpha = orbital_a.expC[dim_a];
+    double beta = orbital_b.expC[dim_b];
     double EAB, exponent, dist_squared, Overlap;
     dist_squared = 0;   
     for (int i = 0; i < num_dimensions; i++){
-        dist_squared += pow(center_a[i]-center_b[i], 2);
+        dist_squared += pow(orbital_a.center[i] - orbital_b.center[i], 2);
     }
     exponent = -(alpha * beta / (alpha + beta)) * dist_squared;
     EAB = pow(M_E, exponent);
@@ -266,7 +270,7 @@ double primitive_overlap(double alpha, double beta, double center_a[3], double c
     // printf("Overlap Coeff is %lf\n", Overlap);
 
     for (int i = 0; i < num_dimensions; i++){
-        Overlap *= little_s(ang_mom_a[i], ang_mom_b[i], alpha, beta, center_a[i], center_b[i]);
+        Overlap *= little_s(orbital_a.angular_momentum_vector[i], orbital_b.angular_momentum_vector[i], alpha, beta, orbital_a.center[i], orbital_b.center[i]);
         // printf("After calculating s(%d), the Overlap Integral is %lf\n", i, Overlap);
     }
 
@@ -277,7 +281,7 @@ double orbital_overlap(struct Orbital orbital_a, struct Orbital orbital_b){
     double integral = 0;
     for(int i = 0; i < num_dimensions; i++){
         for(int j = 0; j < num_dimensions; j++){
-            double ov = primitive_overlap(orbital_a.expC[i], orbital_b.expC[j], orbital_a.center, orbital_b.center, orbital_a.angular_momentum_vector, orbital_b.angular_momentum_vector);
+            double ov = primitive_overlap(i,j,orbital_a,orbital_b);
             integral += orbital_a.NormC[i] * orbital_b.NormC[j] * orbital_a.primC[i] * orbital_b.primC[j] * ov;
             // printf("ov is %lf. Integral is now %lf after using %lf %lf %lf %lf\n", ov, integral, orbital_a.NormC[i], orbital_b.NormC[j], orbital_a.primC[i], orbital_b.primC[j]);
         }
@@ -300,4 +304,20 @@ void Calc_BS_OV_Matrix(struct Orbital orbital_array[Num_Orbitals], double overla
         }
         printf("\n");
     }
+}
+
+// double little_k(int dimension, struct Orbital orbital_a, struct Orbital orbital_b){
+//     double alpha = orbital_a.expC[dimension];
+//     double beta = orbital_b.expC[dimension];
+//     double a = orbital_a.angular_momentum_vector[dimension];
+//     double b = orbital_b.angular_momentum_vector[dimension];
+//     //initial conditions for KE:
+//     if(a == 0 && b == 0){
+//         return 2 * alpha * beta * little_s(1, 1, alpha, beta, )
+//     }
+
+// }
+
+double kinetic_energy_integral(int dimension, struct Orbital orbital_a, struct Orbital orbital_b){
+
 }
