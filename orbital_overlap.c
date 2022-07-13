@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <math.h>
+#include <stdlib.h> /*for system()*/
 
 #define NUMATOMS 3
 #define BS_Size 7
@@ -22,8 +23,9 @@ double primitive_overlap(int dim_a, int dim_b, struct Orbital orbital_a, struct 
 double little_s(int ang_coord_a, int ang_coord_b, double alpha, double beta, double center_a_coord, double center_b_coord);
 double orbital_overlap(struct Orbital orbital_a, struct Orbital orbital_b);
 void Calc_BS_OV_Matrix(struct Orbital orbital_array[Num_Orbitals], double overlap_matrix[BS_Size][BS_Size], int indicies[BS_Size]);
-double little_k(double alpha, double beta, int a, int b);
+double little_k(int dimension, struct Orbital orbital_a, struct Orbital orbital_b, int exp_idx);
 double kinetic_energy_integral(int dimension, struct Orbital orbital_a, struct Orbital orbital_b);
+double dist_squared(struct Orbital orbital_a, struct Orbital orbital_b);
 
 int main(){
     //get info from files.
@@ -36,10 +38,10 @@ int main(){
     calc_norm_const(orbital_array);
     // check out all orbitals in detail
     for (int i = 0; i < Num_Orbitals; i++){
-        orbital_info(orbital_array[i], i);
+        // orbital_info(orbital_array[i], i);
     }
 
-    //overlap between first primitive of orbital 0 (1s_x on H1) with orbital 8 (Pz_z on O)
+    //overlap between first primitive of orbital 0 (1s_x on H1) with orbital 8 (Pz_x on O)
     // double OV = primitive_overlap(0, 0, orbital_array[0], orbital_array[8]]);
     // printf("Ov of the two primatives is: %lf\n", OV);
 
@@ -55,6 +57,15 @@ int main(){
     int included_indicies[BS_Size] = {0,3,4,5,6,7,8};
     Calc_BS_OV_Matrix(orbital_array, BS_overlap_matrix, included_indicies);
 
+    system("clear"); /*clear output screen*/
+    
+    // KE integral for first primatives of orbital 0 (1s_x on H1) with orbital 8 (Pz_x on O) 
+    double KE = kinetic_energy_integral(0, orbital_array[0], orbital_array[8]);
+    printf("KE integral is %lf\n", KE);  
+
+    // printf("problematic little s:\n");
+    // double problem = little_s(orbital_array[0].angular_momentum_vector[2], orbital_array[8].angular_momentum_vector[2], orbital_array[0].expC[0], orbital_array[8].expC[0], orbital_array[0].center[2], orbital_array[8].center[2]);
+    // printf(" %lf\n", problem);
     return 0;
 }
 
@@ -173,6 +184,14 @@ void orbital_info(struct Orbital orb, int idx){
     printf("it is on atom #%d, which has atomic number %d\n----------------\n\n", orb.parent_atom_idx, orb.parent_atom_Z);
 }
 
+double dist_squared(struct Orbital orbital_a, struct Orbital orbital_b){
+    double dist_squared = 0;   
+    for (int i = 0; i < num_dimensions; i++){
+        dist_squared += pow(orbital_a.center[i] - orbital_b.center[i], 2);
+    }
+    return dist_squared;
+}
+
 int factorial(int n){
     int fact = 1;
     for (int i = n; i >= -1; i--){
@@ -226,44 +245,51 @@ void calc_norm_const(struct Orbital orbital_array[Num_Orbitals]){
 double little_s(int ang_coord_a, int ang_coord_b, double alpha, double beta, double center_a_coord, double center_b_coord){
     double P, sum_ab;
 
-    // printf("a: %d, b: %d\n", ang_coord_a, ang_coord_b);
-    if (ang_coord_a == 0 && ang_coord_b == 0){
-        // printf("returning 1\n");
+    // printf("%d, %d, %lf, %lf\n", ang_coord_a, ang_coord_b, center_a_coord, P);
+    if (ang_coord_a == 0 && ang_coord_b == 0){ //definition part 1
+        printf("    s(0,0)=1\n");
         return 1;
     }
 
     sum_ab = alpha + beta;
     P = (alpha*center_a_coord + beta*center_b_coord) / sum_ab;
+    // printf("alpha %lf, beta %lf, center a %lf, center b %lf\n", alpha, beta, center_a_coord, center_b_coord);
+    // printf("P is %lf\n", P);
 
-    if (ang_coord_a == 1 && ang_coord_b == 0){
-        // printf("Simple Case\n");
+    if(ang_coord_a == 1 && ang_coord_b == 0){ //definition part 2
+        printf("    s(1,0)=%lf\n", -(center_a_coord - P));
+        // printf("Simple Case: -(%lf-%lf) = %lf\n",center_a_coord,P,-(center_a_coord - P));
         return -(center_a_coord - P);
     }
-    if ( ang_coord_a != 1 && ang_coord_b == 0){ //recurrence index
+    if(ang_coord_a != 1 && ang_coord_b == 0){ //recurrence index
         double s_prev_a, s_prev_2_a;
+        printf("s(%d,%d) requires recurrance\n",ang_coord_a,ang_coord_b);
         s_prev_a = little_s(ang_coord_a - 1, 0, alpha, beta, center_a_coord, center_b_coord);
         s_prev_2_a = little_s(ang_coord_a - 2, 0, alpha, beta, center_a_coord, center_b_coord);
         // printf("Using intermediate values that use lower values of a: %lf and %lf\n", s_prev_a, s_prev_2_a);
-        return -(center_a_coord - P) * s_prev_a + ((ang_coord_a - 1) / (2*sum_ab)) * s_prev_2_a;
+        double value = -(center_a_coord - P) * s_prev_a + ((ang_coord_a - 1) / (2*sum_ab)) * s_prev_2_a;
+        printf("s(%d,%d) is %lf\n",ang_coord_a,ang_coord_b,value);
+        return value;
     }
-    if ( ang_coord_b != 0 ){ //transfer
+    if(ang_coord_b != 0){ //transfer
         double s_xfer, s_prev_b;
+        printf("s(%d,%d) requires transfer\n",ang_coord_a,ang_coord_b);
         s_xfer = little_s(ang_coord_a + 1, ang_coord_b - 1, alpha, beta, center_a_coord, center_b_coord);
         s_prev_b = little_s(ang_coord_a, ang_coord_b - 1, alpha, beta, center_a_coord, center_b_coord);
-        // printf("Using intermediate values that use lower values of a: %lf and %lf\n", s_xfer, s_prev_b);
-        return s_xfer + (center_a_coord - center_b_coord) * s_prev_b;
+        // printf("Using intermediate values that use different values of a and b: %lf and %lf\n", s_xfer, s_prev_b);
+        double value = s_xfer + (center_a_coord - center_b_coord) * s_prev_b; 
+        printf("s(%d,%d) is %lf\n",ang_coord_a,ang_coord_b,value);
+        return value;
     }
 }
 
 double primitive_overlap(int dim_a, int dim_b, struct Orbital orbital_a, struct Orbital orbital_b){
     double alpha = orbital_a.expC[dim_a];
     double beta = orbital_b.expC[dim_b];
-    double EAB, exponent, dist_squared, Overlap;
-    dist_squared = 0;   
-    for (int i = 0; i < num_dimensions; i++){
-        dist_squared += pow(orbital_a.center[i] - orbital_b.center[i], 2);
-    }
-    exponent = -(alpha * beta / (alpha + beta)) * dist_squared;
+    double EAB, exponent, dist_squrd, Overlap;
+    
+    dist_squrd = dist_squared(orbital_a, orbital_b);
+    exponent = -(alpha * beta / (alpha + beta)) * dist_squrd;
     EAB = pow(M_E, exponent);
 
     Overlap = EAB * pow((M_PI / (alpha + beta)), 1.5);
@@ -306,18 +332,73 @@ void Calc_BS_OV_Matrix(struct Orbital orbital_array[Num_Orbitals], double overla
     }
 }
 
-// double little_k(int dimension, struct Orbital orbital_a, struct Orbital orbital_b){
-//     double alpha = orbital_a.expC[dimension];
-//     double beta = orbital_b.expC[dimension];
-//     double a = orbital_a.angular_momentum_vector[dimension];
-//     double b = orbital_b.angular_momentum_vector[dimension];
-//     //initial conditions for KE:
-//     if(a == 0 && b == 0){
-//         return 2 * alpha * beta * little_s(1, 1, alpha, beta, )
-//     }
+double little_k(int dimension, struct Orbital orbital_a, struct Orbital orbital_b, int exp_idx){
+    double alpha = orbital_a.expC[exp_idx];
+    double beta = orbital_b.expC[exp_idx];
+    int a = orbital_a.angular_momentum_vector[dimension];
+    int b = orbital_b.angular_momentum_vector[dimension];
+    double coord_a = orbital_a.center[dimension];
+    double coord_b = orbital_b.center[dimension];
+    double al_bet = alpha * beta;
 
-// }
+    printf("k_%d_(%d,%d)\n",dimension,a,b);
+    //initial conditions for KE:
+    if(a == 0 && b == 0){
+        return 2 * al_bet * little_s(1, 1, alpha, beta, coord_a, coord_b);
+    }
+    if(a > 0 && b == 0){
+        return -a * beta * little_s(a-1, 1, alpha, beta, coord_a, coord_b) + 2 * al_bet * little_s(a+1, 1, alpha, beta, coord_a, coord_b);
+    }
+    if(a == 0 && b > 0){
+        return -alpha * b * little_s(1, b-1, alpha, beta, coord_a, coord_b) + 2 * al_bet * little_s(1, b+1, alpha, beta, coord_a, coord_b);
+    }
+    //kinetic energy integral
+    if(a > 0 && b > 0){
+        double s_lower = little_s(a-1, b-1, alpha, beta, coord_a, coord_b);
+        double s_down_a = little_s(a-1, b+1, alpha, beta, coord_a, coord_b);
+        double s_up_a = little_s(a+1, b-1, alpha, beta, coord_a, coord_b);
+        double s_upper = little_s(a+1, b+1, alpha, beta, coord_a, coord_b);
+
+        return (a * b * s_lower - 2 * a * beta * s_down_a - 2 * alpha * b * s_up_a + 4 * al_bet * s_upper) / 2;
+    }
+}
 
 double kinetic_energy_integral(int dimension, struct Orbital orbital_a, struct Orbital orbital_b){
+    //KE integral of 2 gaussian primitives i.e. Chi_ij and K_x
+    double alpha = orbital_a.expC[dimension];
+    double beta = orbital_b.expC[dimension];
+    double coord_a = orbital_a.center[dimension];
+    double coord_b = orbital_b.center[dimension];
+    double sumAB = alpha + beta;
 
+    double dist_squrd = dist_squared(orbital_a, orbital_b);
+
+    double EAB = pow(M_E, -(alpha*beta / sumAB) * dist_squrd);
+
+    double coeff = pow((M_PI / sumAB), 1.5);
+
+    double little_integrals[3][2]; //3 little s and 3 little k
+    for(int i = 0; i < num_dimensions; i++){
+        printf("\ni: %d\n",i);
+        little_integrals[i][0] = little_s(orbital_a.angular_momentum_vector[i], orbital_b.angular_momentum_vector[i], alpha, beta, orbital_a.center[i], orbital_b.center[i]);
+        little_integrals[i][1] = little_k(i, orbital_a, orbital_b, dimension);
+
+        printf("Little k: %lf. Little s: %lf\n", i, little_integrals[i][1], little_integrals[i][0]);
+    }
+
+    double KE = EAB * coeff;
+    double product;
+
+    for(int i = 0; i < num_dimensions; i++){
+        product = 1;
+        // printf("%d, %d, %d\n",i,(i+1)%3, (i+2)%3);
+        product *= little_integrals[i][1]; // the little k with index i
+        product *= little_integrals[(i+1) % 3][0] * little_integrals[(i+2) % 3][0]; // The little s with the other indices
+        printf("\nlittle integrals: k %d     s %d     s %d\n",i,(i+1)%3,(i+2)%3);
+        printf("            %lf      %lf     %lf\n", little_integrals[i][1], little_integrals[(i+1) % 3][0], little_integrals[(i+2) % 3][0]);
+        printf("product %lf\n", product);
+        KE += product;
+    }
+    
+    return KE;
 }
