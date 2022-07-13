@@ -61,7 +61,7 @@ int main(){
     
     // KE integral for first primatives of orbital 0 (1s_x on H1) with orbital 8 (Pz_x on O) 
     double KE = kinetic_energy_integral(0, orbital_array[0], orbital_array[8]);
-    printf("KE integral is %lf\n", KE);  
+    printf("\nKE integral is %lf\n", KE);  
 
     // printf("problematic little s:\n");
     // double problem = little_s(orbital_array[0].angular_momentum_vector[2], orbital_array[8].angular_momentum_vector[2], orbital_array[0].expC[0], orbital_array[8].expC[0], orbital_array[0].center[2], orbital_array[8].center[2]);
@@ -266,7 +266,6 @@ double little_s(int ang_coord_a, int ang_coord_b, double alpha, double beta, dou
         printf("s(%d,%d) requires recurrance\n",ang_coord_a,ang_coord_b);
         s_prev_a = little_s(ang_coord_a - 1, 0, alpha, beta, center_a_coord, center_b_coord);
         s_prev_2_a = little_s(ang_coord_a - 2, 0, alpha, beta, center_a_coord, center_b_coord);
-        // printf("Using intermediate values that use lower values of a: %lf and %lf\n", s_prev_a, s_prev_2_a);
         double value = -(center_a_coord - P) * s_prev_a + ((ang_coord_a - 1) / (2*sum_ab)) * s_prev_2_a;
         printf("s(%d,%d) is %lf\n",ang_coord_a,ang_coord_b,value);
         return value;
@@ -276,7 +275,6 @@ double little_s(int ang_coord_a, int ang_coord_b, double alpha, double beta, dou
         printf("s(%d,%d) requires transfer\n",ang_coord_a,ang_coord_b);
         s_xfer = little_s(ang_coord_a + 1, ang_coord_b - 1, alpha, beta, center_a_coord, center_b_coord);
         s_prev_b = little_s(ang_coord_a, ang_coord_b - 1, alpha, beta, center_a_coord, center_b_coord);
-        // printf("Using intermediate values that use different values of a and b: %lf and %lf\n", s_xfer, s_prev_b);
         double value = s_xfer + (center_a_coord - center_b_coord) * s_prev_b; 
         printf("s(%d,%d) is %lf\n",ang_coord_a,ang_coord_b,value);
         return value;
@@ -379,7 +377,7 @@ double kinetic_energy_integral(int dimension, struct Orbital orbital_a, struct O
 
     double little_integrals[3][2]; //3 little s and 3 little k
     for(int i = 0; i < num_dimensions; i++){
-        printf("\ni: %d\n",i);
+        printf("\ni: %d\n", i);
         little_integrals[i][0] = little_s(orbital_a.angular_momentum_vector[i], orbital_b.angular_momentum_vector[i], alpha, beta, orbital_a.center[i], orbital_b.center[i]);
         little_integrals[i][1] = little_k(i, orbital_a, orbital_b, dimension);
 
@@ -396,7 +394,7 @@ double kinetic_energy_integral(int dimension, struct Orbital orbital_a, struct O
         product *= little_integrals[(i+1) % 3][0] * little_integrals[(i+2) % 3][0]; // The little s with the other indices
         printf("\nlittle integrals: k %d     s %d     s %d\n",i,(i+1)%3,(i+2)%3);
         printf("            %lf      %lf     %lf\n", little_integrals[i][1], little_integrals[(i+1) % 3][0], little_integrals[(i+2) % 3][0]);
-        printf("product %lf\n", product);
+        // printf("product %lf\n", product);
         KE += product;
     }
     
