@@ -44,12 +44,12 @@ int main(){
     }
 
     // overlap between first primitive of orbital 0 (1s_x on H1) with orbital 8 (Pz_x on O)
-    double OV = primitive_overlap(0, 0, orbital_array[0], orbital_array[8]);
-    printf("Ov of the two primatives is: %lf\n", OV);
+    // double OV = primitive_overlap(0, 0, orbital_array[0], orbital_array[8]);
+    // printf("Ov of the two primatives is: %lf\n", OV);
 
     // overlap between orbital 0 and 8 (H1_1s and O_p_z)
-    double INTEGRAL = orbital_overlap(orbital_array[0], orbital_array[8]);
-    printf("Overlap integral is %lf\n", INTEGRAL);
+    // double INTEGRAL = orbital_overlap(orbital_array[0], orbital_array[8]);
+    // printf("Overlap integral is %lf\n", INTEGRAL);
 
     // // overlap between orbital 2 and 3 (H1_1s and H1_2s)
     // double INTEGRAL = orbital_overlap(orbital_array[0], orbital_array[7]);
@@ -62,8 +62,8 @@ int main(){
     // system("clear"); /*clear output screen*/
 
     // find little k_y for orbital 0 and orbital 8 (first primitive) (still opposite sign of tutorial)
-    // struct Orbital orbital_a = orbital_array[0];
-    // struct Orbital orbital_b = orbital_array[8];
+    struct Orbital orbital_a = orbital_array[0];
+    struct Orbital orbital_b = orbital_array[8];
     // double lk = little_k(orbital_a.angular_momentum_vector[1],orbital_b.angular_momentum_vector[1],orbital_a.expC[0],orbital_b.expC[0],orbital_a.center[1],orbital_b.center[1]);
     // printf("little_k is %lf\n", lk);
     
@@ -72,8 +72,8 @@ int main(){
     // printf("\nKE integral is %lf\n", KE); //slightly off. 0.001887 instead of 0.00167343. Maybe due to different e or pi values. EAB is right for the digets shown, but there are more in the paper that aren't here.
 
     // K_17
-    // double KE = orbital_kinetic_energy_integral(orbital_a, orbital_b);
-    // printf("KE integral is %lf\n", KE);
+    double KE = orbital_kinetic_energy_integral(orbital_a, orbital_b);
+    printf("KE integral is %lf\n", KE);
 
     return 0;
 }
@@ -374,7 +374,7 @@ double little_k(int ang_coord_a, int ang_coord_b, double alpha, double beta, dou
         return (ang_coord_b*ang_coord_a * s_lower - 2*ang_coord_a*beta*s_down_a - 2*alpha*ang_coord_b*s_up_a + 4*alpha*beta*s_upper)/2;
     }
     if(ang_coord_a*ang_coord_b < 0){
-        printf("Bad angular momentum vector components need to be positive.");
+        printf("Bad angular momentum vector. Components need to be positive.");
         exit(1);
     }
 }
@@ -394,7 +394,7 @@ double primitives_KE(int primitive_idx_a, int primitive_idx_b, struct Orbital or
         double k_i = little_k(orbital_a.angular_momentum_vector[dim], orbital_b.angular_momentum_vector[dim], alpha, beta, orbital_a.center[dim], orbital_b.center[dim]);
         double s_ii = little_s(orbital_a.angular_momentum_vector[dim_s_ii], orbital_b.angular_momentum_vector[dim_s_ii], alpha, beta, orbital_a.center[dim_s_ii], orbital_b.center[dim_s_ii]);
         double s_iii = little_s(orbital_a.angular_momentum_vector[dim_s_iii], orbital_b.angular_momentum_vector[dim_s_iii], alpha, beta, orbital_a.center[dim_s_iii], orbital_b.center[dim_s_iii]);
-        printf("K_%d(%d,%d)=%lf     S_%d(%d,%d)=%lf         S_%d(%d,%d)=%lf\n",dim,orbital_a.angular_momentum_vector[dim],orbital_b.angular_momentum_vector[dim],k_i,dim_s_ii,orbital_a.angular_momentum_vector[dim_s_ii], orbital_b.angular_momentum_vector[dim_s_ii],s_ii,dim_s_iii, orbital_a.angular_momentum_vector[dim_s_iii], orbital_b.angular_momentum_vector[dim_s_iii],s_iii);
+        // printf("K_%d(%d,%d)=%lf     S_%d(%d,%d)=%lf         S_%d(%d,%d)=%lf\n",dim,orbital_a.angular_momentum_vector[dim],orbital_b.angular_momentum_vector[dim],k_i,dim_s_ii,orbital_a.angular_momentum_vector[dim_s_ii], orbital_b.angular_momentum_vector[dim_s_ii],s_ii,dim_s_iii, orbital_a.angular_momentum_vector[dim_s_iii], orbital_b.angular_momentum_vector[dim_s_iii],s_iii);
         sum += k_i * s_ii * s_iii;
     }
 
@@ -415,6 +415,7 @@ double orbital_kinetic_energy_integral(struct Orbital orbital_a, struct Orbital 
         for(int j = 0; j < num_dimensions; j++){
             double prim_KE = primitives_KE(i,j,orbital_a,orbital_b);
             KE += orbital_a.NormC[i]*orbital_b.NormC[j]*orbital_a.primC[i]*orbital_b.primC[j] * prim_KE;
+            printf("Int of prims %d %d has KE of %lf\n", i, j, prim_KE);
         }
     }
     return KE;
