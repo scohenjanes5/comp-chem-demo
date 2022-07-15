@@ -195,8 +195,7 @@ void orbital_info(struct Orbital orb, int idx){
 }
 
 double dist_squared(struct Orbital orbital_a, struct Orbital orbital_b){
-    // The square of the distance between two nuclei.
-    double dist_squared;   
+    double dist_squared = 0;   
     for (int i = 0; i < num_dimensions; i++){
         dist_squared += pow(orbital_a.center[i] - orbital_b.center[i], 2);
     }
@@ -204,9 +203,8 @@ double dist_squared(struct Orbital orbital_a, struct Orbital orbital_b){
 }
 
 int factorial(int n){
-    //calculate factorial. Used for normalization constants. -1! should be 1.
     int fact = 1;
-    for (int i = n; i >= -1; i--){
+    for (int i = n; i >= -1; i--){ //This should actually decriment by 2 and only be called once that's what !! really means. No effect with such small numbers though.
         if(i == 0 || i == -1){
             fact *= 1;
         } else {
@@ -217,15 +215,13 @@ int factorial(int n){
 }
 
 double get_norm_denominator(int angular_momentum_vector[num_dimensions]){
-    //the denominator of the normalization constant expression
     double den;
     int part, fact[num_dimensions];
     //each component of the ang. mom. vector is used.
     for(int i = 0; i < num_dimensions; i++){
         part = 2 * angular_momentum_vector[i] - 1;
         fact[i] = factorial(part);
-        fact[i] = factorial(fact[i]); //the formula requires factorials of factorials.
-        // It is actually factorial with decriments of 2 instead of 1
+        fact[i] = factorial(fact[i]);
     }
     //the denominator is the square root of the product of all double factorials
     den = sqrt(fact[0] * fact[1] * fact[2]);
@@ -258,6 +254,7 @@ void calc_norm_const(struct Orbital orbital_array[Num_Orbitals]){
 
 double little_s(int ang_coord_a, int ang_coord_b, double alpha, double beta, double center_a_coord, double center_b_coord){
     double P, sum_ab;
+
     // printf("%d, %d, %lf, %lf\n", ang_coord_a, ang_coord_b, center_a_coord, P);
     if (ang_coord_a == 0 && ang_coord_b == 0){ //definition part 1
         // printf("    s(0,0)=1\n");
@@ -292,19 +289,21 @@ double little_s(int ang_coord_a, int ang_coord_b, double alpha, double beta, dou
 }
 
 double primitive_overlap(int dim_a, int dim_b, struct Orbital orbital_a, struct Orbital orbital_b){
-    // There are three primitives that make up an orbital in STO-3G. This is the overlap of one pair.
     double alpha = orbital_a.expC[dim_a];
     double beta = orbital_b.expC[dim_b];
+    double al_bet = alpha + beta;
     double EAB, exponent, dist_squrd, Overlap;
     
     dist_squrd = dist_squared(orbital_a, orbital_b);
-    exponent = -(alpha * beta / (alpha + beta)) * dist_squrd;
+    exponent = -(alpha * beta / al_bet) * dist_squrd;
     EAB = pow(M_E, exponent);
 
-    Overlap = EAB * pow((M_PI / (alpha + beta)), 1.5);
+    Overlap = EAB * pow((M_PI / al_bet), 1.5);
+    // printf("Overlap Coeff is %lf\n", Overlap);
 
     for (int i = 0; i < num_dimensions; i++){
         Overlap *= little_s(orbital_a.angular_momentum_vector[i], orbital_b.angular_momentum_vector[i], alpha, beta, orbital_a.center[i], orbital_b.center[i]);
+        // printf("After calculating s(%d), the Overlap Integral is %lf\n", i, Overlap);
     }
 
     return Overlap;
