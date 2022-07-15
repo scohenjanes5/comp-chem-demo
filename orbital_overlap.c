@@ -19,22 +19,23 @@ void get_coefs(struct Orbital orbital_array[BS_Size], FILE *coef_pointer);
 void calc_norm_const(struct Orbital orbital_array[Num_Orbitals]);
 double get_norm_denominator(int angular_momentum_vector[num_dimensions]);
 int factorial(int n);
+double dist_squared(struct Orbital orbital_a, struct Orbital orbital_b);
 double primitive_overlap(int dim_a, int dim_b, struct Orbital orbital_a, struct Orbital orbital_b);
 double little_s(int ang_coord_a, int ang_coord_b, double alpha, double beta, double center_a_coord, double center_b_coord);
 double orbital_overlap(struct Orbital orbital_a, struct Orbital orbital_b);
 void Calc_BS_OV_Matrix(struct Orbital orbital_array[Num_Orbitals], double overlap_matrix[BS_Size][BS_Size], int indicies[BS_Size]);
 double little_k(int ang_coord_a, int ang_coord_b, double alpha, double beta, double center_a_coord, double center_b_coord);
 double orbital_kinetic_energy_integral(struct Orbital orbital_a, struct Orbital orbital_b);
-double dist_squared(struct Orbital orbital_a, struct Orbital orbital_b);
 double primitives_KE(int primitive_idx_a, int primitive_idx_b, struct Orbital orbital_a, struct Orbital orbital_b);
 
 int main(){
     //get info from files.
-    //geometry
     FILE *geom_pointer, *coef_pointer;
     geom_pointer = fopen("water_wolfram.xyz", "r");
     coef_pointer = fopen("cont_exp_coefs.csv", "r");
+    //geometry
     get_geom_details(orbital_array, geom_pointer);
+    //coeffs
     get_coefs(orbital_array, coef_pointer);
     calc_norm_const(orbital_array);
     // check out all orbitals in detail
@@ -48,7 +49,7 @@ int main(){
 
     // overlap between orbital 0 and 8 (H1_1s and O_p_z)
     double INTEGRAL = orbital_overlap(orbital_array[0], orbital_array[8]);
-    printf("Overlap integral is %lf\n",INTEGRAL);
+    printf("Overlap integral is %lf\n", INTEGRAL);
 
     // // overlap between orbital 2 and 3 (H1_1s and H1_2s)
     // double INTEGRAL = orbital_overlap(orbital_array[0], orbital_array[7]);
