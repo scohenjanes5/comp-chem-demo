@@ -23,9 +23,10 @@ double primitive_overlap(int dim_a, int dim_b, struct Orbital orbital_a, struct 
 double little_s(int ang_coord_a, int ang_coord_b, double alpha, double beta, double center_a_coord, double center_b_coord);
 double orbital_overlap(struct Orbital orbital_a, struct Orbital orbital_b);
 void Calc_BS_OV_Matrix(struct Orbital orbital_array[Num_Orbitals], double overlap_matrix[BS_Size][BS_Size], int indicies[BS_Size]);
-double little_k(int dimension, struct Orbital orbital_a, struct Orbital orbital_b, int exp_idx);
+double little_k(int ang_coord_a, int ang_coord_b, double alpha, double beta, double center_a_coord, double center_b_coord);
 double kinetic_energy_integral(int dimension, struct Orbital orbital_a, struct Orbital orbital_b);
 double dist_squared(struct Orbital orbital_a, struct Orbital orbital_b);
+double primitives_KE(int primitive_idx, struct Orbital orbital_a, struct Orbital orbital_b);
 
 int main(){
     //get info from files.
@@ -57,15 +58,18 @@ int main(){
     int included_indicies[BS_Size] = {0,3,4,5,6,7,8};
     Calc_BS_OV_Matrix(orbital_array, BS_overlap_matrix, included_indicies);
 
-    system("clear"); /*clear output screen*/
+    // system("clear"); /*clear output screen*/
+
+    // find little k_y for orbital 0 and orbital 8 (first primitive) (still opposite sign of tutorial)
+    // struct Orbital orbital_a = orbital_array[0];
+    // struct Orbital orbital_b = orbital_array[8];
+    // double lk = little_k(orbital_a.angular_momentum_vector[1],orbital_b.angular_momentum_vector[1],orbital_a.expC[0],orbital_b.expC[0],orbital_a.center[1],orbital_b.center[1]);
+    // printf("little_k is %lf\n", lk);
     
     // KE integral for first primatives of orbital 0 (1s_x on H1) with orbital 8 (Pz_x on O) 
-    double KE = kinetic_energy_integral(0, orbital_array[0], orbital_array[8]);
-    printf("\nKE integral is %lf\n", KE);  
+    double KE = primitives_KE(0, orbital_array[0], orbital_array[8]);
+    printf("\nKE integral is %lf\n", KE); //slightly off. 0.001887 instead of 0.00167343. Maybe due to different e or pi values. EAB is right for the digets shown, but there are more in the paper that aren't here.
 
-    // printf("problematic little s:\n");
-    // double problem = little_s(orbital_array[0].angular_momentum_vector[2], orbital_array[8].angular_momentum_vector[2], orbital_array[0].expC[0], orbital_array[8].expC[0], orbital_array[0].center[2], orbital_array[8].center[2]);
-    // printf(" %lf\n", problem);
     return 0;
 }
 
@@ -187,7 +191,7 @@ void orbital_info(struct Orbital orb, int idx){
 
 double dist_squared(struct Orbital orbital_a, struct Orbital orbital_b){
     // The square of the distance between two nuclei.
-    double dist_squared = 0;   
+    double dist_squared;   
     for (int i = 0; i < num_dimensions; i++){
         dist_squared += pow(orbital_a.center[i] - orbital_b.center[i], 2);
     }
@@ -216,6 +220,7 @@ double get_norm_denominator(int angular_momentum_vector[num_dimensions]){
         part = 2 * angular_momentum_vector[i] - 1;
         fact[i] = factorial(part);
         fact[i] = factorial(fact[i]); //the formula requires factorials of factorials.
+        // It is actually factorial with decriments of 2 instead of 1
     }
     //the denominator is the square root of the product of all double factorials
     den = sqrt(fact[0] * fact[1] * fact[2]);
@@ -250,36 +255,33 @@ double little_s(int ang_coord_a, int ang_coord_b, double alpha, double beta, dou
     double P, sum_ab;
     // printf("%d, %d, %lf, %lf\n", ang_coord_a, ang_coord_b, center_a_coord, P);
     if (ang_coord_a == 0 && ang_coord_b == 0){ //definition part 1
-        printf("    s(0,0)=1\n");
+        // printf("    s(0,0)=1\n");
         return 1;
     }
 
     sum_ab = alpha + beta;
     P = (alpha*center_a_coord + beta*center_b_coord) / sum_ab;
-    // printf("alpha %lf, beta %lf, center a %lf, center b %lf\n", alpha, beta, center_a_coord, center_b_coord);
-    // printf("P is %lf\n", P);
 
     if(ang_coord_a == 1 && ang_coord_b == 0){ //definition part 2
-        printf("    s(1,0)=%lf\n", -(center_a_coord - P));
-        // printf("Simple Case: -(%lf-%lf) = %lf\n",center_a_coord,P,-(center_a_coord - P));
+        // printf("    s(1,0)=%lf\n", -(center_a_coord - P));
         return -(center_a_coord - P);
     }
     if(ang_coord_a != 1 && ang_coord_b == 0){ //recurrence relation
         double s_prev_a, s_prev_2_a;
-        printf("s(%d,%d) requires recurrance\n",ang_coord_a,ang_coord_b);
+        // printf("s(%d,%d) requires recurrance\n",ang_coord_a,ang_coord_b);
         s_prev_a = little_s(ang_coord_a - 1, 0, alpha, beta, center_a_coord, center_b_coord);
         s_prev_2_a = little_s(ang_coord_a - 2, 0, alpha, beta, center_a_coord, center_b_coord);
         double value = -(center_a_coord - P) * s_prev_a + ((ang_coord_a - 1) / (2*sum_ab)) * s_prev_2_a;
-        printf("s(%d,%d) is %lf\n",ang_coord_a,ang_coord_b,value);
+        // printf("s(%d,%d) is %lf\n",ang_coord_a,ang_coord_b,value);
         return value;
     }
     if(ang_coord_b != 0){ //transfer
         double s_xfer, s_prev_b;
-        printf("s(%d,%d) requires transfer\n",ang_coord_a,ang_coord_b);
+        // printf("s(%d,%d) requires transfer\n",ang_coord_a,ang_coord_b);
         s_xfer = little_s(ang_coord_a + 1, ang_coord_b - 1, alpha, beta, center_a_coord, center_b_coord);
         s_prev_b = little_s(ang_coord_a, ang_coord_b - 1, alpha, beta, center_a_coord, center_b_coord);
         double value = s_xfer + (center_a_coord - center_b_coord) * s_prev_b; 
-        printf("s(%d,%d) is %lf\n",ang_coord_a,ang_coord_b,value);
+        // printf("s(%d,%d) is %lf\n",ang_coord_a,ang_coord_b,value);
         return value;
     }
 }
@@ -333,74 +335,159 @@ void Calc_BS_OV_Matrix(struct Orbital orbital_array[Num_Orbitals], double overla
     }
 }
 
-double little_k(int dimension, struct Orbital orbital_a, struct Orbital orbital_b, int exp_idx){
-    //a part of the KE integral that uses a single combination of angular momentum components.
-    double alpha = orbital_a.expC[exp_idx];
-    double beta = orbital_b.expC[exp_idx];
-    int a = orbital_a.angular_momentum_vector[dimension];
-    int b = orbital_b.angular_momentum_vector[dimension];
-    double coord_a = orbital_a.center[dimension];
-    double coord_b = orbital_b.center[dimension];
-    double al_bet = alpha * beta;
+//The x component of the kinetic energy integral can be written as a sum of one dimensional overlap integrals.
+//Recall that S_x=constants*s_x(ax,bx)*s_y(ay,by)*s_z(az,bz)
+//K_x=constants*k_x(ax,bx)sy(az,by)sz(az,bz)
+//The value of k() can be obtained from s() with other factors since k is really the sum of a polynomial expansion of s() functions
 
-    printf("k_%d_(%d,%d)\n",dimension,a,b);
-    //initial conditions for KE:
-    if(a == 0 && b == 0){
-        return 2 * al_bet * little_s(1, 1, alpha, beta, coord_a, coord_b);
+double little_k(int ang_coord_a, int ang_coord_b, double alpha, double beta, double center_a_coord, double center_b_coord){
+    //The sum of overlap integrals that have varying angular momentum components obtained from taking the 
+    // derivative of the gaussian as the KE operator requires.
+    //use the same arguments as little_s, except when changing the angular momentum numbers.
+    
+    // initial conditions
+    if(ang_coord_a == 0 && ang_coord_b == 0){
+        double ls = little_s(1, 1, alpha, beta, center_a_coord, center_b_coord);
+        // printf("k(0,0) needs s(1,1) which is %lf\n",ls);
+        return 2 * alpha * beta * ls;
     }
-    if(a > 0 && b == 0){
-        return -a * beta * little_s(a-1, 1, alpha, beta, coord_a, coord_b) + 2 * al_bet * little_s(a+1, 1, alpha, beta, coord_a, coord_b);
+    if(ang_coord_a > 0 && ang_coord_b == 0 ){
+        double a_down = little_s(ang_coord_a+1,1, alpha, beta, center_a_coord, center_b_coord);
+        double a_up = little_s(ang_coord_a-1,1, alpha, beta, center_a_coord, center_b_coord);
+        return -(ang_coord_a * beta) * a_down + 2 * alpha * beta * a_up;
     }
-    if(a == 0 && b > 0){
-        return -alpha * b * little_s(1, b-1, alpha, beta, coord_a, coord_b) + 2 * al_bet * little_s(1, b+1, alpha, beta, coord_a, coord_b);
+    if (ang_coord_b > 0 && ang_coord_a == 0){
+        double b_down = little_s(1,ang_coord_b-1, alpha, beta, center_a_coord, center_b_coord);
+        double b_up = little_s(1,ang_coord_b+1, alpha, beta, center_a_coord, center_b_coord);
+        return -(ang_coord_b * alpha) * b_down + 2 * alpha * beta * b_up;  
     }
-    //kinetic energy integral
-    if(a > 0 && b > 0){
-        double s_lower = little_s(a-1, b-1, alpha, beta, coord_a, coord_b);
-        double s_down_a = little_s(a-1, b+1, alpha, beta, coord_a, coord_b);
-        double s_up_a = little_s(a+1, b-1, alpha, beta, coord_a, coord_b);
-        double s_upper = little_s(a+1, b+1, alpha, beta, coord_a, coord_b);
-
-        return (a * b * s_lower - 2 * a * beta * s_down_a - 2 * alpha * b * s_up_a + 4 * al_bet * s_upper) / 2;
+    //general case
+    if(ang_coord_a * ang_coord_b > 0){
+        double s_lower = little_s(ang_coord_a-1, ang_coord_b-1, alpha, beta, center_a_coord, center_b_coord);
+        double s_down_a = little_s(ang_coord_a-1, ang_coord_b+1, alpha, beta, center_a_coord, center_b_coord);
+        double s_up_a = little_s(ang_coord_a+1, ang_coord_b-1, alpha, beta, center_a_coord, center_b_coord);
+        double s_upper = little_s(ang_coord_a+1, ang_coord_b+1, alpha, beta, center_a_coord, center_b_coord);
+        return (ang_coord_b*ang_coord_a * s_lower - 2*ang_coord_a*beta*s_down_a - 2*alpha*ang_coord_b*s_up_a + 4*alpha*beta*s_upper)/2;
+    }
+    if(ang_coord_a*ang_coord_b < 0){
+        printf("Bad angular momentum vector components need to be positive.");
+        exit(1);
     }
 }
 
-double kinetic_energy_integral(int dimension, struct Orbital orbital_a, struct Orbital orbital_b){
-    //1 cartesian component of the KE integral of 2 gaussian primitives. Uses all corresponding pairs of angular momentum components.
-    double alpha = orbital_a.expC[dimension];
-    double beta = orbital_b.expC[dimension];
-    double coord_a = orbital_a.center[dimension];
-    double coord_b = orbital_b.center[dimension];
-    double sumAB = alpha + beta;
-
-    double dist_squrd = dist_squared(orbital_a, orbital_b);
-
-    double EAB = pow(M_E, -(alpha*beta / sumAB) * dist_squrd);
-
-    double coeff = pow((M_PI / sumAB), 1.5);
-
-    double little_integrals[3][2]; //3 little s and 3 little k
-    for(int i = 0; i < num_dimensions; i++){
-        printf("\ni: %d\n", i);
-        little_integrals[i][0] = little_s(orbital_a.angular_momentum_vector[i], orbital_b.angular_momentum_vector[i], alpha, beta, orbital_a.center[i], orbital_b.center[i]);
-        little_integrals[i][1] = little_k(i, orbital_a, orbital_b, dimension);
-
-        printf("Little k: %lf. Little s: %lf\n", i, little_integrals[i][1], little_integrals[i][0]);
+double primitives_KE(int primitive_idx, struct Orbital orbital_a, struct Orbital orbital_b){
+    //combine all cartesian components of the KE integral and include the prefactors
+    //IE K_x=constants*k_x(ax,bx)sy(az,by)sz(az,bz)
+    //This is still for one set of primitives so alpha and beta are shared all the way down.
+    double alpha = orbital_a.expC[primitive_idx];
+    double beta = orbital_b.expC[primitive_idx];
+    double sum_ab = alpha + beta;
+    //The coordinates, however, are different.
+    double sum, EAB, pi_coeff, KE;
+    for(int dimension = 0; dimension < num_dimensions; dimension++){
+        int dim_s_ii = (dimension+1)%3;
+        int dim_s_iii = (dimension+2)%3;
+        double k_i = little_k(orbital_a.angular_momentum_vector[dimension], orbital_b.angular_momentum_vector[dimension], alpha, beta, orbital_a.center[dimension], orbital_b.center[dimension]);
+        double s_ii = little_s(orbital_a.angular_momentum_vector[dim_s_ii], orbital_b.angular_momentum_vector[dim_s_ii], alpha, beta, orbital_a.center[dim_s_ii], orbital_b.center[dim_s_ii]);
+        double s_iii = little_s(orbital_a.angular_momentum_vector[dim_s_iii], orbital_b.angular_momentum_vector[dim_s_iii], alpha, beta, orbital_a.center[dim_s_iii], orbital_b.center[dim_s_iii]);
+        printf("K_%d(%d,%d)=%lf     S_%d(%d,%d)=%lf         S_%d(%d,%d)=%lf\n",dimension,orbital_a.angular_momentum_vector[dimension],orbital_b.angular_momentum_vector[dimension],k_i,dim_s_ii,orbital_a.angular_momentum_vector[dim_s_ii], orbital_b.angular_momentum_vector[dim_s_ii],s_ii,dim_s_iii, orbital_a.angular_momentum_vector[dim_s_iii], orbital_b.angular_momentum_vector[dim_s_iii],s_iii);
+        sum += k_i * s_ii * s_iii;
     }
 
-    double KE = EAB * coeff;
-    double product;
+    EAB = pow(M_E, -(alpha*beta/sum_ab)*dist_squared(orbital_a, orbital_b));
+    pi_coeff = pow(M_PI/sum_ab, 1.5);
 
-    for(int i = 0; i < num_dimensions; i++){
-        product = 1;
-        // printf("%d, %d, %d\n",i,(i+1)%3, (i+2)%3);
-        product *= little_integrals[i][1]; // the little k with index i
-        product *= little_integrals[(i+1) % 3][0] * little_integrals[(i+2) % 3][0]; // The little s with the other indices
-        printf("\nlittle integrals: k %d     s %d     s %d\n",i,(i+1)%3,(i+2)%3);
-        printf("            %lf      %lf     %lf\n", little_integrals[i][1], little_integrals[(i+1) % 3][0], little_integrals[(i+2) % 3][0]);
-        // printf("product %lf\n", product);
-        KE += product;
-    }
-    
+    KE = EAB * pi_coeff * sum;
+    // printf("EAB %lf PIcoeff %lf\n",EAB,pi_coeff);
+    // printf("KE: %lf\n",KE);
+
     return KE;
 }
+
+// double kinetic_energy_integral(int primitive_idx, struct Orbital orbital_a, struct Orbital orbital_b){
+    
+
+// }
+
+//     //a part of the KE integral that uses a single combination of angular momentum components.
+//     double alpha = orbital_a.expC[exp_idx];
+//     double beta = orbital_b.expC[exp_idx];
+//     int a = orbital_a.angular_momentum_vector[dimension];
+//     int b = orbital_b.angular_momentum_vector[dimension];
+//     double coord_a = orbital_a.center[dimension];
+//     double coord_b = orbital_b.center[dimension];
+//     double al_bet = alpha * beta;
+
+//     printf("k_%d_(%d,%d)\n", dimension, a, b);
+//     //initial conditions for KE:
+//     if(a == 0 && b == 0){
+//         printf("k(0,0)\n");
+//         double ls = little_s(1, 1, alpha, beta, coord_a, coord_b);
+//         printf("alpha %lf, beta %lf, ls %lf\n", alpha, beta, ls);
+//         if (ls < 0){ //this is totally cheating but IDK how the author gets the same answer for s_y(1,1) but the opposite sign for the k_y(0,0)
+//             ls *= -1;
+//         }
+//         return 2 * al_bet * ls;
+//     }
+//     if(a > 0 && b == 0){
+//         return -a * beta * little_s(a-1, 1, alpha, beta, coord_a, coord_b) + 2 * al_bet * little_s(a+1, 1, alpha, beta, coord_a, coord_b);
+//     }
+//     if(a == 0 && b > 0){
+//         return -alpha * b * little_s(1, b-1, alpha, beta, coord_a, coord_b) + 2 * al_bet * little_s(1, b+1, alpha, beta, coord_a, coord_b);
+//     }
+//     //kinetic energy integral
+//     if(a > 0 && b > 0){
+//         double s_lower = little_s(a-1, b-1, alpha, beta, coord_a, coord_b);
+//         double s_down_a = little_s(a-1, b+1, alpha, beta, coord_a, coord_b);
+//         double s_up_a = little_s(a+1, b-1, alpha, beta, coord_a, coord_b);
+//         double s_upper = little_s(a+1, b+1, alpha, beta, coord_a, coord_b);
+
+//         return (a * b * s_lower - 2 * a * beta * s_down_a - 2 * alpha * b * s_up_a + 4 * al_bet * s_upper) / 2;
+//     }
+// }
+
+// double kinetic_energy_integral(int dimension, struct Orbital orbital_a, struct Orbital orbital_b){
+//     //1 cartesian component of the KE integral of 2 gaussian primitives. Uses all corresponding pairs of angular momentum components.
+//     double alpha = orbital_a.expC[dimension];
+//     double beta = orbital_b.expC[dimension];
+//     double coord_a = orbital_a.center[dimension];
+//     double coord_b = orbital_b.center[dimension];
+//     double sumAB = alpha + beta;
+
+//     double dist_squrd = dist_squared(orbital_a, orbital_b);
+
+//     double EAB = pow(M_E, -(alpha*beta / sumAB) * dist_squrd);
+    
+//     double coeff = pow((M_PI / sumAB), 1.5);
+//     printf("EAB: %lf, coef: %lf\n",EAB, coeff);
+
+//     double little_integrals[3][2]; //3 little s and 3 little k
+//     for(int i = 0; i < num_dimensions; i++){
+//         printf("\ni: %d\n", i);
+//         little_integrals[i][0] = little_s(orbital_a.angular_momentum_vector[i], orbital_b.angular_momentum_vector[i], alpha, beta, orbital_a.center[i], orbital_b.center[i]);
+//         little_integrals[i][1] = little_k(i, orbital_a, orbital_b, dimension);
+
+//         printf("Little k: %lf\n", little_integrals[i][1]);//. Little s: %lf\n", i, little_integrals[i][1], little_integrals[i][0]);
+//     }
+
+//     double KE = EAB * coeff;
+//     double product;
+
+//     for(int i = 0; i < num_dimensions; i++){
+//         // printf("%d, %d, %d\n",i,(i+1)%3, (i+2)%3);
+//         product = little_integrals[i][1]; // the little k with index i
+//         product *= little_integrals[(i+1) % 3][0] * little_integrals[(i+2) % 3][0]; // The little s with the other indices
+//         printf("\nlittle integrals: k %d     s %d     s %d\n", i, (i+1)%3, (i+2)%3);
+//         printf("            %lf      %lf     %lf\n", little_integrals[i][1], little_integrals[(i+1) % 3][0], little_integrals[(i+2) % 3][0]);
+//         printf("product %lf\n", product);
+//         KE += product;
+//         printf("KE %lf\n",KE);
+//     }
+
+//     for(int i=0; i<num_dimensions;i++){
+//         printf("k:        s:\n");
+//         printf("%lf        %lf\n",little_integrals[i][1],little_integrals[i][0]);
+//     }
+    
+//     return KE;
+// }
