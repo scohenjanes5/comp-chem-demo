@@ -257,8 +257,6 @@ double little_s(int ang_coord_a, int ang_coord_b, double alpha, double beta, dou
 
     sum_ab = alpha + beta;
     P = (alpha*center_a_coord + beta*center_b_coord) / sum_ab;
-    // printf("alpha %lf, beta %lf, center a %lf, center b %lf\n", alpha, beta, center_a_coord, center_b_coord);
-    // printf("P is %lf\n", P);
 
     if(ang_coord_a == 1 && ang_coord_b == 0){ //definition part 2
         // printf("    s(1,0)=%lf\n", -(center_a_coord - P));
