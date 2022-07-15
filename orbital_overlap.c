@@ -287,13 +287,14 @@ double little_s(int ang_coord_a, int ang_coord_b, double alpha, double beta, dou
 double primitive_overlap(int dim_a, int dim_b, struct Orbital orbital_a, struct Orbital orbital_b){
     double alpha = orbital_a.expC[dim_a];
     double beta = orbital_b.expC[dim_b];
+    double al_bet = alpha + beta;
     double EAB, exponent, dist_squrd, Overlap;
     
     dist_squrd = dist_squared(orbital_a, orbital_b);
-    exponent = -(alpha * beta / (alpha + beta)) * dist_squrd;
+    exponent = -(alpha * beta / al_bet) * dist_squrd;
     EAB = pow(M_E, exponent);
 
-    Overlap = EAB * pow((M_PI / (alpha + beta)), 1.5);
+    Overlap = EAB * pow((M_PI / al_bet), 1.5);
     // printf("Overlap Coeff is %lf\n", Overlap);
 
     for (int i = 0; i < num_dimensions; i++){
