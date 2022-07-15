@@ -420,58 +420,6 @@ double orbital_kinetic_energy_integral(struct Orbital orbital_a, struct Orbital 
     return KE;
 }
 
-//     //a part of the KE integral that uses a single combination of angular momentum components.
-//     double alpha = orbital_a.expC[exp_idx];
-//     double beta = orbital_b.expC[exp_idx];
-//     int a = orbital_a.angular_momentum_vector[dimension];
-//     int b = orbital_b.angular_momentum_vector[dimension];
-//     double coord_a = orbital_a.center[dimension];
-//     double coord_b = orbital_b.center[dimension];
-//     double al_bet = alpha * beta;
-
-//     printf("k_%d_(%d,%d)\n", dimension, a, b);
-//     //initial conditions for KE:
-//     if(a == 0 && b == 0){
-//         printf("k(0,0)\n");
-//         double ls = little_s(1, 1, alpha, beta, coord_a, coord_b);
-//         printf("alpha %lf, beta %lf, ls %lf\n", alpha, beta, ls);
-//         if (ls < 0){ //this is totally cheating but IDK how the author gets the same answer for s_y(1,1) but the opposite sign for the k_y(0,0)
-//             ls *= -1;
-//         }
-//         return 2 * al_bet * ls;
-//     }
-//     if(a > 0 && b == 0){
-//         return -a * beta * little_s(a-1, 1, alpha, beta, coord_a, coord_b) + 2 * al_bet * little_s(a+1, 1, alpha, beta, coord_a, coord_b);
-//     }
-//     if(a == 0 && b > 0){
-//         return -alpha * b * little_s(1, b-1, alpha, beta, coord_a, coord_b) + 2 * al_bet * little_s(1, b+1, alpha, beta, coord_a, coord_b);
-//     }
-//     //kinetic energy integral
-//     if(a > 0 && b > 0){
-//         double s_lower = little_s(a-1, b-1, alpha, beta, coord_a, coord_b);
-//         double s_down_a = little_s(a-1, b+1, alpha, beta, coord_a, coord_b);
-//         double s_up_a = little_s(a+1, b-1, alpha, beta, coord_a, coord_b);
-//         double s_upper = little_s(a+1, b+1, alpha, beta, coord_a, coord_b);
-
-//         return (a * b * s_lower - 2 * a * beta * s_down_a - 2 * alpha * b * s_up_a + 4 * al_bet * s_upper) / 2;
-//     }
-// }
-
-// double orbital_kinetic_energy_integral(int dimension, struct Orbital orbital_a, struct Orbital orbital_b){
-//     //1 cartesian component of the KE integral of 2 gaussian primitives. Uses all corresponding pairs of angular momentum components.
-//     double alpha = orbital_a.expC[dimension];
-//     double beta = orbital_b.expC[dimension];
-//     double coord_a = orbital_a.center[dimension];
-//     double coord_b = orbital_b.center[dimension];
-//     double sumAB = alpha + beta;
-
-//     double dist_squrd = dist_squared(orbital_a, orbital_b);
-
-//     double EAB = pow(M_E, -(alpha*beta / sumAB) * dist_squrd);
-    
-//     double coeff = pow((M_PI / sumAB), 1.5);
-//     printf("EAB: %lf, coef: %lf\n",EAB, coeff);
-
 //     double little_integrals[3][2]; //3 little s and 3 little k
 //     for(int i = 0; i < num_dimensions; i++){
 //         printf("\ni: %d\n", i);
@@ -492,13 +440,9 @@ double orbital_kinetic_energy_integral(struct Orbital orbital_a, struct Orbital 
 //         printf("            %lf      %lf     %lf\n", little_integrals[i][1], little_integrals[(i+1) % 3][0], little_integrals[(i+2) % 3][0]);
 //         printf("product %lf\n", product);
 //         KE += product;
-//         printf("KE %lf\n",KE);
 //     }
 
 //     for(int i=0; i<num_dimensions;i++){
 //         printf("k:        s:\n");
 //         printf("%lf        %lf\n",little_integrals[i][1],little_integrals[i][0]);
 //     }
-    
-//     return KE;
-// }
