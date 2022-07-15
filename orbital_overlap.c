@@ -24,9 +24,9 @@ double little_s(int ang_coord_a, int ang_coord_b, double alpha, double beta, dou
 double orbital_overlap(struct Orbital orbital_a, struct Orbital orbital_b);
 void Calc_BS_OV_Matrix(struct Orbital orbital_array[Num_Orbitals], double overlap_matrix[BS_Size][BS_Size], int indicies[BS_Size]);
 double little_k(int ang_coord_a, int ang_coord_b, double alpha, double beta, double center_a_coord, double center_b_coord);
-double kinetic_energy_integral(int dimension, struct Orbital orbital_a, struct Orbital orbital_b);
+double orbital_kinetic_energy_integral(struct Orbital orbital_a, struct Orbital orbital_b);
 double dist_squared(struct Orbital orbital_a, struct Orbital orbital_b);
-double primitives_KE(int primitive_idx, struct Orbital orbital_a, struct Orbital orbital_b);
+double primitives_KE(int primitive_idx_a, int primitive_idx_b, struct Orbital orbital_a, struct Orbital orbital_b);
 
 int main(){
     //get info from files.
@@ -42,15 +42,15 @@ int main(){
         // orbital_info(orbital_array[i], i);
     }
 
-    //overlap between first primitive of orbital 0 (1s_x on H1) with orbital 8 (Pz_x on O)
-    // double OV = primitive_overlap(0, 0, orbital_array[0], orbital_array[8]]);
-    // printf("Ov of the two primatives is: %lf\n", OV);
+    // overlap between first primitive of orbital 0 (1s_x on H1) with orbital 8 (Pz_x on O)
+    double OV = primitive_overlap(0, 0, orbital_array[0], orbital_array[8]);
+    printf("Ov of the two primatives is: %lf\n", OV);
 
-    //overlap between orbital 0 and 8 (H1_1s and O_p_z)
-    // double INTEGRAL = orbital_overlap(orbital_array[0], orbital_array[8]);
-    // printf("Overlap integral is %lf\n",INTEGRAL);
+    // overlap between orbital 0 and 8 (H1_1s and O_p_z)
+    double INTEGRAL = orbital_overlap(orbital_array[0], orbital_array[8]);
+    printf("Overlap integral is %lf\n",INTEGRAL);
 
-    //overlap between orbital 2 and 3 (H1_1s and H1_2s)
+    // // overlap between orbital 2 and 3 (H1_1s and H1_2s)
     // double INTEGRAL = orbital_overlap(orbital_array[0], orbital_array[7]);
     // printf("Overlap integral is %lf\n", INTEGRAL);
 
@@ -67,8 +67,12 @@ int main(){
     // printf("little_k is %lf\n", lk);
     
     // KE integral for first primatives of orbital 0 (1s_x on H1) with orbital 8 (Pz_x on O) 
-    double KE = primitives_KE(0, orbital_array[0], orbital_array[8]);
-    printf("\nKE integral is %lf\n", KE); //slightly off. 0.001887 instead of 0.00167343. Maybe due to different e or pi values. EAB is right for the digets shown, but there are more in the paper that aren't here.
+    // double KE = primitives_KE(0, orbital_array[0], orbital_array[8]);
+    // printf("\nKE integral is %lf\n", KE); //slightly off. 0.001887 instead of 0.00167343. Maybe due to different e or pi values. EAB is right for the digets shown, but there are more in the paper that aren't here.
+
+    // K_17
+    // double KE = orbital_kinetic_energy_integral(orbital_a, orbital_b);
+    // printf("KE integral is %lf\n", KE);
 
     return 0;
 }
@@ -241,7 +245,7 @@ void calc_norm_const(struct Orbital orbital_array[Num_Orbitals]){
         //calculate the denominator. This is the same regardless of alpha.
         denominator = get_norm_denominator(orbital_array[i].angular_momentum_vector);
 
-        // finally, calculate the normalization constant for each dimension.
+        // finally, calculate the normalization constant for each primitive.
         for (int j = 0; j < num_dimensions; j++){
             alpha = orbital_array[i].expC[j];
             angular_part = pow((4 * alpha), (sum_angular_coords * 0.5)) / denominator;
@@ -375,22 +379,22 @@ double little_k(int ang_coord_a, int ang_coord_b, double alpha, double beta, dou
     }
 }
 
-double primitives_KE(int primitive_idx, struct Orbital orbital_a, struct Orbital orbital_b){
+double primitives_KE(int primitive_idx_a, int primitive_idx_b, struct Orbital orbital_a, struct Orbital orbital_b){
     //combine all cartesian components of the KE integral and include the prefactors
     //IE K_x=constants*k_x(ax,bx)sy(az,by)sz(az,bz)
     //This is still for one set of primitives so alpha and beta are shared all the way down.
-    double alpha = orbital_a.expC[primitive_idx];
-    double beta = orbital_b.expC[primitive_idx];
+    double alpha = orbital_a.expC[primitive_idx_a];
+    double beta = orbital_b.expC[primitive_idx_b];
     double sum_ab = alpha + beta;
     //The coordinates, however, are different.
     double sum, EAB, pi_coeff, KE;
-    for(int dimension = 0; dimension < num_dimensions; dimension++){
-        int dim_s_ii = (dimension+1)%3;
-        int dim_s_iii = (dimension+2)%3;
-        double k_i = little_k(orbital_a.angular_momentum_vector[dimension], orbital_b.angular_momentum_vector[dimension], alpha, beta, orbital_a.center[dimension], orbital_b.center[dimension]);
+    for(int dim = 0; dim < num_dimensions; dim++){
+        int dim_s_ii = (dim+1)%3;
+        int dim_s_iii = (dim+2)%3;
+        double k_i = little_k(orbital_a.angular_momentum_vector[dim], orbital_b.angular_momentum_vector[dim], alpha, beta, orbital_a.center[dim], orbital_b.center[dim]);
         double s_ii = little_s(orbital_a.angular_momentum_vector[dim_s_ii], orbital_b.angular_momentum_vector[dim_s_ii], alpha, beta, orbital_a.center[dim_s_ii], orbital_b.center[dim_s_ii]);
         double s_iii = little_s(orbital_a.angular_momentum_vector[dim_s_iii], orbital_b.angular_momentum_vector[dim_s_iii], alpha, beta, orbital_a.center[dim_s_iii], orbital_b.center[dim_s_iii]);
-        printf("K_%d(%d,%d)=%lf     S_%d(%d,%d)=%lf         S_%d(%d,%d)=%lf\n",dimension,orbital_a.angular_momentum_vector[dimension],orbital_b.angular_momentum_vector[dimension],k_i,dim_s_ii,orbital_a.angular_momentum_vector[dim_s_ii], orbital_b.angular_momentum_vector[dim_s_ii],s_ii,dim_s_iii, orbital_a.angular_momentum_vector[dim_s_iii], orbital_b.angular_momentum_vector[dim_s_iii],s_iii);
+        printf("K_%d(%d,%d)=%lf     S_%d(%d,%d)=%lf         S_%d(%d,%d)=%lf\n",dim,orbital_a.angular_momentum_vector[dim],orbital_b.angular_momentum_vector[dim],k_i,dim_s_ii,orbital_a.angular_momentum_vector[dim_s_ii], orbital_b.angular_momentum_vector[dim_s_ii],s_ii,dim_s_iii, orbital_a.angular_momentum_vector[dim_s_iii], orbital_b.angular_momentum_vector[dim_s_iii],s_iii);
         sum += k_i * s_ii * s_iii;
     }
 
@@ -404,10 +408,17 @@ double primitives_KE(int primitive_idx, struct Orbital orbital_a, struct Orbital
     return KE;
 }
 
-// double kinetic_energy_integral(int primitive_idx, struct Orbital orbital_a, struct Orbital orbital_b){
-    
-
-// }
+double orbital_kinetic_energy_integral(struct Orbital orbital_a, struct Orbital orbital_b){
+    //every combo of primitives with appropriate normalization constants.
+    double KE;
+    for(int i = 0; i < num_dimensions; i++){
+        for(int j = 0; j < num_dimensions; j++){
+            double prim_KE = primitives_KE(i,j,orbital_a,orbital_b);
+            KE += orbital_a.NormC[i]*orbital_b.NormC[j]*orbital_a.primC[i]*orbital_b.primC[j] * prim_KE;
+        }
+    }
+    return KE;
+}
 
 //     //a part of the KE integral that uses a single combination of angular momentum components.
 //     double alpha = orbital_a.expC[exp_idx];
@@ -446,7 +457,7 @@ double primitives_KE(int primitive_idx, struct Orbital orbital_a, struct Orbital
 //     }
 // }
 
-// double kinetic_energy_integral(int dimension, struct Orbital orbital_a, struct Orbital orbital_b){
+// double orbital_kinetic_energy_integral(int dimension, struct Orbital orbital_a, struct Orbital orbital_b){
 //     //1 cartesian component of the KE integral of 2 gaussian primitives. Uses all corresponding pairs of angular momentum components.
 //     double alpha = orbital_a.expC[dimension];
 //     double beta = orbital_b.expC[dimension];
