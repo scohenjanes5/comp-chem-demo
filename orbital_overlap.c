@@ -74,6 +74,7 @@ int main(){
     // K_17
     double KE = orbital_kinetic_energy_integral(orbital_a, orbital_b);
     printf("KE integral is %lf\n", KE);
+    // Int of prims 0 0 has KE of 0.001673 is output . so the answer matches author's! IDK why its different coming through this call than the previous one.
 
     return 0;
 }
@@ -415,7 +416,7 @@ double orbital_kinetic_energy_integral(struct Orbital orbital_a, struct Orbital 
         for(int j = 0; j < num_dimensions; j++){
             double prim_KE = primitives_KE(i,j,orbital_a,orbital_b);
             KE += orbital_a.NormC[i]*orbital_b.NormC[j]*orbital_a.primC[i]*orbital_b.primC[j] * prim_KE;
-            printf("Int of prims %d %d has KE of %lf\n", i, j, prim_KE);
+            printf("Int of prims %d %d has KE of %lf\n", i, j, prim_KE); //commenting this out changes final answer somehow. Both states are still not right so keep checking out what could be wrong with this.
         }
     }
     return KE;
