@@ -445,6 +445,13 @@ void Calc_BS_KE_Matrix(struct Orbital orbital_array[Num_Orbitals], double KE_mat
     for(int i = 0; i < BS_Size; i++){
         for(int j = 0; j < BS_Size; j++){
             KE_matrix[i][j] = orbital_kinetic_energy_integral(used_orbitals[i], used_orbitals[j]);
+            // printf("    %lf", KE_matrix[i][j]);
+        }
+        // printf("\n");
+    }
+    for(int i = 0; i < BS_Size; i++){
+        for(int j = 0; j < BS_Size; j++){
+            // KE_matrix[i][j] = orbital_kinetic_energy_integral(used_orbitals[i], used_orbitals[j]);
             printf("    %lf", KE_matrix[i][j]);
         }
         printf("\n");
