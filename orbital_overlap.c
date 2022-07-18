@@ -23,7 +23,8 @@ double dist_squared(struct Orbital orbital_a, struct Orbital orbital_b);
 double primitive_overlap(int dim_a, int dim_b, struct Orbital orbital_a, struct Orbital orbital_b);
 double little_s(int ang_coord_a, int ang_coord_b, double alpha, double beta, double center_a_coord, double center_b_coord);
 double orbital_overlap(struct Orbital orbital_a, struct Orbital orbital_b);
-void Calc_BS_OV_Matrix(struct Orbital orbital_array[Num_Orbitals], double overlap_matrix[BS_Size][BS_Size], int indicies[BS_Size]);
+void Calc_BS_OV_Matrix(struct Orbital orbital_array[Num_Orbitals], double overlap_matrix[BS_Size][BS_Size], int indicies[BS_Size]
+// void Calc_BS_KE_Matrix(struct Orbital orbital_array[Num_Orbitals], double KE_matrix[BS_Size][BS_Size], int indicies[BS_Size]);
 double little_k(int ang_coord_a, int ang_coord_b, double alpha, double beta, double center_a_coord, double center_b_coord);
 double orbital_kinetic_energy_integral(struct Orbital orbital_a, struct Orbital orbital_b);
 double primitives_KE(int primitive_idx_a, int primitive_idx_b, struct Orbital orbital_a, struct Orbital orbital_b);
@@ -60,7 +61,6 @@ int main(){
     Calc_BS_OV_Matrix(orbital_array, BS_overlap_matrix, included_indicies);
 
     // system("clear"); /*clear output screen*/
-
     // find little k_y for orbital 0 and orbital 8 (first primitive) (still opposite sign of tutorial)
     struct Orbital orbital_a = orbital_array[0];
     struct Orbital orbital_b = orbital_array[8];
@@ -448,3 +448,20 @@ double orbital_kinetic_energy_integral(struct Orbital orbital_a, struct Orbital 
 //         printf("k:        s:\n");
 //         printf("%lf        %lf\n",little_integrals[i][1],little_integrals[i][0]);
 //     }
+
+// void Calc_BS_KE_Matrix(struct Orbital orbital_array[Num_Orbitals], double KE_matrix[BS_Size][BS_Size], int indicies[BS_Size]){
+//     //Since there are 9 orbitals in the sytem and 7 in the BS, exclude some orbitals to avoid repeats.
+//     struct Orbital used_orbitals[BS_Size];
+//     for (int i = 0; i < BS_Size; i++){
+//         int next_idx = indicies[i];
+//         used_orbitals[i] = orbital_array[next_idx];
+//     }
+//     printf("KE matrix:\n");
+//     for(int i = 0; i < BS_Size; i++){
+//         for(int j = 0; j < BS_Size; j++){
+//             KE_matrix[i][j] = orbital_KE(used_orbitals[i], used_orbitals[j]);
+//             printf("    %lf", KE_matrix[i][j]);
+//         }
+//         printf("\n");
+//     }
+// }
