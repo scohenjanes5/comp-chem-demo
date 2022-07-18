@@ -24,10 +24,10 @@ double primitive_overlap(int dim_a, int dim_b, struct Orbital orbital_a, struct 
 double little_s(int ang_coord_a, int ang_coord_b, double alpha, double beta, double center_a_coord, double center_b_coord);
 double orbital_overlap(struct Orbital orbital_a, struct Orbital orbital_b);
 void Calc_BS_OV_Matrix(struct Orbital orbital_array[Num_Orbitals], double overlap_matrix[BS_Size][BS_Size], int indicies[BS_Size]);
-// void Calc_BS_KE_Matrix(struct Orbital orbital_array[Num_Orbitals], double KE_matrix[BS_Size][BS_Size], int indicies[BS_Size]);
 double little_k(int ang_coord_a, int ang_coord_b, double alpha, double beta, double center_a_coord, double center_b_coord);
 double orbital_kinetic_energy_integral(struct Orbital orbital_a, struct Orbital orbital_b);
 double primitives_KE(int primitive_idx_a, int primitive_idx_b, struct Orbital orbital_a, struct Orbital orbital_b);
+void Calc_BS_KE_Matrix(struct Orbital orbital_array[Num_Orbitals], double KE_matrix[BS_Size][BS_Size], int indicies[BS_Size]);
 
 int main(){
     //get info from files.
@@ -389,12 +389,20 @@ double primitives_KE(int primitive_idx_a, int primitive_idx_b, struct Orbital or
     double sum_ab = alpha + beta;
     //The coordinates, however, are different.
     double sum, EAB, pi_coeff, KE;
+    double little_integrals[3][2]; //3 little s and 3 little k
+
+    for(int i = 0; i < num_dimensions; i++){
+        little_integrals[i][0] = little_s(orbital_a.angular_momentum_vector[i], orbital_b.angular_momentum_vector[i], alpha, beta, orbital_a.center[i], orbital_b.center[i]);
+        little_integrals[i][1] = little_k(orbital_a.angular_momentum_vector[i], orbital_b.angular_momentum_vector[i], alpha, beta, orbital_a.center[i], orbital_b.center[i]);
+        // printf("Little k: %lf\n", little_integrals[i][1]);//. Little s: %lf\n", i, little_integrals[i][1], little_integrals[i][0]);
+    }
+
     for(int dim = 0; dim < num_dimensions; dim++){
         int dim_s_ii = (dim+1)%3;
         int dim_s_iii = (dim+2)%3;
-        double k_i = little_k(orbital_a.angular_momentum_vector[dim], orbital_b.angular_momentum_vector[dim], alpha, beta, orbital_a.center[dim], orbital_b.center[dim]);
-        double s_ii = little_s(orbital_a.angular_momentum_vector[dim_s_ii], orbital_b.angular_momentum_vector[dim_s_ii], alpha, beta, orbital_a.center[dim_s_ii], orbital_b.center[dim_s_ii]);
-        double s_iii = little_s(orbital_a.angular_momentum_vector[dim_s_iii], orbital_b.angular_momentum_vector[dim_s_iii], alpha, beta, orbital_a.center[dim_s_iii], orbital_b.center[dim_s_iii]);
+        double k_i = little_integrals[dim][1]; //the little k
+        double s_ii = little_integrals[dim_s_ii][0]; //the other dimensions' little s
+        double s_iii = little_integrals[dim_s_iii][0];
         // printf("K_%d(%d,%d)=%lf     S_%d(%d,%d)=%lf         S_%d(%d,%d)=%lf\n",dim,orbital_a.angular_momentum_vector[dim],orbital_b.angular_momentum_vector[dim],k_i,dim_s_ii,orbital_a.angular_momentum_vector[dim_s_ii], orbital_b.angular_momentum_vector[dim_s_ii],s_ii,dim_s_iii, orbital_a.angular_momentum_vector[dim_s_iii], orbital_b.angular_momentum_vector[dim_s_iii],s_iii);
         sum += k_i * s_ii * s_iii;
     }
@@ -403,8 +411,6 @@ double primitives_KE(int primitive_idx_a, int primitive_idx_b, struct Orbital or
     pi_coeff = pow(M_PI/sum_ab, 1.5);
 
     KE = EAB * pi_coeff * sum;
-    // printf("EAB %lf PIcoeff %lf\n",EAB,pi_coeff);
-    // printf("KE: %lf\n",KE);
 
     return KE;
 }
@@ -422,46 +428,19 @@ double orbital_kinetic_energy_integral(struct Orbital orbital_a, struct Orbital 
     return KE;
 }
 
-//     double little_integrals[3][2]; //3 little s and 3 little k
-//     for(int i = 0; i < num_dimensions; i++){
-//         printf("\ni: %d\n", i);
-//         little_integrals[i][0] = little_s(orbital_a.angular_momentum_vector[i], orbital_b.angular_momentum_vector[i], alpha, beta, orbital_a.center[i], orbital_b.center[i]);
-//         little_integrals[i][1] = little_k(i, orbital_a, orbital_b, dimension);
-
-//         printf("Little k: %lf\n", little_integrals[i][1]);//. Little s: %lf\n", i, little_integrals[i][1], little_integrals[i][0]);
-//     }
-
-//     double KE = EAB * coeff;
-//     double product;
-
-//     for(int i = 0; i < num_dimensions; i++){
-//         // printf("%d, %d, %d\n",i,(i+1)%3, (i+2)%3);
-//         product = little_integrals[i][1]; // the little k with index i
-//         product *= little_integrals[(i+1) % 3][0] * little_integrals[(i+2) % 3][0]; // The little s with the other indices
-//         printf("\nlittle integrals: k %d     s %d     s %d\n", i, (i+1)%3, (i+2)%3);
-//         printf("            %lf      %lf     %lf\n", little_integrals[i][1], little_integrals[(i+1) % 3][0], little_integrals[(i+2) % 3][0]);
-//         printf("product %lf\n", product);
-//         KE += product;
-//     }
-
-//     for(int i=0; i<num_dimensions;i++){
-//         printf("k:        s:\n");
-//         printf("%lf        %lf\n",little_integrals[i][1],little_integrals[i][0]);
-//     }
-
-// void Calc_BS_KE_Matrix(struct Orbital orbital_array[Num_Orbitals], double KE_matrix[BS_Size][BS_Size], int indicies[BS_Size]){
-//     //Since there are 9 orbitals in the sytem and 7 in the BS, exclude some orbitals to avoid repeats.
-//     struct Orbital used_orbitals[BS_Size];
-//     for (int i = 0; i < BS_Size; i++){
-//         int next_idx = indicies[i];
-//         used_orbitals[i] = orbital_array[next_idx];
-//     }
-//     printf("KE matrix:\n");
-//     for(int i = 0; i < BS_Size; i++){
-//         for(int j = 0; j < BS_Size; j++){
-//             KE_matrix[i][j] = orbital_KE(used_orbitals[i], used_orbitals[j]);
-//             printf("    %lf", KE_matrix[i][j]);
-//         }
-//         printf("\n");
-//     }
-// }
+void Calc_BS_KE_Matrix(struct Orbital orbital_array[Num_Orbitals], double KE_matrix[BS_Size][BS_Size], int indicies[BS_Size]){
+    //Since there are 9 orbitals in the sytem and 7 in the BS, exclude some orbitals to avoid repeats.
+    struct Orbital used_orbitals[BS_Size];
+    for (int i = 0; i < BS_Size; i++){
+        int next_idx = indicies[i];
+        used_orbitals[i] = orbital_array[next_idx];
+    }
+    printf("KE matrix:\n");
+    for(int i = 0; i < BS_Size; i++){
+        for(int j = 0; j < BS_Size; j++){
+            KE_matrix[i][j] = orbital_kinetic_energy_integral(used_orbitals[i], used_orbitals[j]);
+            printf("    %lf", KE_matrix[i][j]);
+        }
+        printf("\n");
+    }
+}
