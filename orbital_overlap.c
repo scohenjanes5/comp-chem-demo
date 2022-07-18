@@ -72,9 +72,12 @@ int main(){
     // printf("\nKE integral is %lf\n", KE); //slightly off. 0.001887 instead of 0.00167343. Maybe due to different e or pi values. EAB is right for the digets shown, but there are more in the paper that aren't here.
 
     // K_17
-    double KE = orbital_kinetic_energy_integral(orbital_a, orbital_b);
-    printf("KE integral is %lf\n", KE);
+    // double KE = orbital_kinetic_energy_integral(orbital_a, orbital_b);
+    // printf("KE integral is %lf\n", KE);
     // Int of prims 0 0 has KE of 0.001673 is output . so the answer matches author's! IDK why its different coming through this call than the previous one.
+
+    //KE overlap integral
+    Calc_BS_KE_Matrix(orbital_array, BS_overlap_matrix, included_indicies);
 
     return 0;
 }
@@ -417,12 +420,15 @@ double primitives_KE(int primitive_idx_a, int primitive_idx_b, struct Orbital or
 
 double orbital_kinetic_energy_integral(struct Orbital orbital_a, struct Orbital orbital_b){
     //every combo of primitives with appropriate normalization constants.
-    double KE;
+    double KE = 0; //Not explicitly assigning to 0 breaks this.
     for(int i = 0; i < num_dimensions; i++){
         for(int j = 0; j < num_dimensions; j++){
-            double prim_KE = primitives_KE(i,j,orbital_a,orbital_b);
+            // printf("nothing\n"); //This line does not affect output
+            printf("%d %d\n",i,j); //This line does affect output
+            double prim_KE = primitives_KE(i, j, orbital_a, orbital_b);
+            // printf("%lf\n",prim_KE); //This line does affect output
             KE += orbital_a.NormC[i]*orbital_b.NormC[j]*orbital_a.primC[i]*orbital_b.primC[j] * prim_KE;
-            printf("Int of prims %d %d has KE of %lf\n", i, j, prim_KE); //commenting this out changes final answer somehow. Both states are still not right so keep checking out what could be wrong with this.
+            // printf("Int of prims %d %d has KE of %lf\n", i, j, prim_KE); //commenting this out changes final answer somehow. Both states are still not right so keep checking out what could be wrong with this.
         }
     }
     return KE;
