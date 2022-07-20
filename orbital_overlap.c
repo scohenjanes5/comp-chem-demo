@@ -18,7 +18,7 @@ void get_geom_details(struct Orbital orbital_array[BS_Size], FILE *geom_pointer)
 void get_coefs(struct Orbital orbital_array[BS_Size], FILE *coef_pointer);
 void calc_norm_const(struct Orbital orbital_array[Num_Orbitals]);
 double get_norm_denominator(int angular_momentum_vector[num_dimensions]);
-int factorial(int n);
+int fact2(int n);
 double dist_squared(struct Orbital orbital_a, struct Orbital orbital_b);
 double primitive_overlap(int dim_a, int dim_b, struct Orbital orbital_a, struct Orbital orbital_b);
 double little_s(int ang_coord_a, int ang_coord_b, double alpha, double beta, double center_a_coord, double center_b_coord);
@@ -237,14 +237,14 @@ double dist_squared(struct Orbital orbital_a, struct Orbital orbital_b){
     return dist_squared;
 }
 
-int factorial(int n){
+int fact2(int n){ //like normal factorial but decriment by 2 instead of 1.
     int fact = 1;
-    for (int i = n; i >= -1; i--){ //This should actually decriment by 2 and only be called once that's what !! really means. No effect with such small numbers though.
-        if(i == 0 || i == -1){
+    for (int i = n; i >= -1; i -= 2){
+      if(i == 0 || i == -1){
             fact *= 1;
         } else {
             fact *= i;
-        }
+        }  
     }
     return fact;
 }
@@ -255,8 +255,7 @@ double get_norm_denominator(int angular_momentum_vector[num_dimensions]){
     //each component of the ang. mom. vector is used.
     for(int i = 0; i < num_dimensions; i++){
         part = 2 * angular_momentum_vector[i] - 1;
-        fact[i] = factorial(part);
-        fact[i] = factorial(fact[i]);
+        fact[i] = fact2(part);
     }
     //the denominator is the square root of the product of all double factorials
     den = sqrt(fact[0] * fact[1] * fact[2]);
