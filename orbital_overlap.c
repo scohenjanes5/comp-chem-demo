@@ -40,9 +40,9 @@ int main(){
     get_coefs(orbital_array, coef_pointer);
     calc_norm_const(orbital_array);
     // check out all orbitals in detail
-    for (int i = 0; i < Num_Orbitals; i++){
-        // orbital_info(orbital_array[i], i);
-    }
+    // for (int i = 0; i < Num_Orbitals; i++){
+    //     orbital_info(orbital_array[i], i);
+    // }
 
     // overlap between first primitive of orbital 0 (1s_x on H1) with orbital 8 (Pz_x on O)
     // double OV = primitive_overlap(0, 0, orbital_array[0], orbital_array[8]);
@@ -61,34 +61,12 @@ int main(){
     Calc_BS_OV_Matrix(orbital_array, BS_overlap_matrix, included_indicies);
 
     // system("clear"); /*clear output screen*/
-    // find little k_y for orbital 0 and orbital 8 (first primitive) (still opposite sign of tutorial)
     struct Orbital orbital_a = orbital_array[0];
     struct Orbital orbital_b = orbital_array[8];
-    // double lk = little_k(orbital_a.angular_momentum_vector[1],orbital_b.angular_momentum_vector[1],orbital_a.expC[0],orbital_b.expC[0],orbital_a.center[1],orbital_b.center[1]);
-    // printf("little_k is %lf\n", lk);
     
-    double KE;
-
-    double KE_ab, KE_ba, Ov_ab, Ov_ba;
-
-    // Ov_ab = little_s(0, 1, 3.425251, 5.033151, -0.961040, 0.240260);
-
-    // Ov_ba = little_s(1, 0, 5.033151, 3.425251, 0.240260, -0.961040);
-
-    // KE_ab = little_k(0, 1, 3.425251, 5.033151, -0.961040, 0.240260);
-    
-    // KE_ba = little_k(1, 0, 5.033151, 3.425251, 0.240260, -0.961040);
-    // printf("OV: %lf vs %lf\n",Ov_ab,Ov_ba);
-    // printf("KE: %lf vs %lf\n",KE_ab,KE_ba);
-
     // KE integral for first primatives of orbital 0 (1s_x on H1) with orbital 8 (Pz_x on O) 
     // KE = primitives_KE(0, orbital_array[0], orbital_array[8]);
     // printf("\nKE integral is %lf\n", KE); //slightly off. 0.001887 instead of 0.00167343. Maybe due to different e or pi values. EAB is right for the digets shown, but there are more in the paper that aren't here.
-
-    // K_17
-    // KE = orbital_kinetic_energy_integral(orbital_a, orbital_b);
-    // printf("KE integral is %lf\n", KE);
-    // Int of prims 0 0 has KE of 0.001673 is output. so the answer matches author's! IDK why its different coming through this call than the previous one.
 
     // K_08
     // KE = orbital_kinetic_energy_integral(orbital_a, orbital_b);
@@ -96,14 +74,7 @@ int main(){
     // Int of prims 0 0 has KE of // K_17
     // double KE = orbital_kinetic_energy_integral(orbital_a, orbital_b);
     // printf("KE integral is %lf\n", KE);
-    // Int of prims 0 0 has KE of -0.167203 is output. Correct.
-
-    // printf("\n---------\n\n");
-
-    // K_80
-    // KE = orbital_kinetic_energy_integral(orbital_b, orbital_a);
-    // printf("KE integral is %lf\n", KE);
-    // Int of prims 0 0 has KE of -0.167203 is output. Should match above answer.
+    // Int of prims 0 0 has KE of -0.167203 is output. Correct
 
     //KE overlap integral
     Calc_BS_KE_Matrix(orbital_array, BS_overlap_matrix, included_indicies);
@@ -405,17 +376,19 @@ double little_k(int ang_coord_a, int ang_coord_b, double alpha, double beta, dou
         // printf("k(%d,%d) little s' %lf %lf\n",ang_coord_a, ang_coord_b, b_down, b_up);
         return -ang_coord_b*alpha*b_down + 2*alpha*beta*b_up;  
     }
-    //general case
+
+    if(ang_coord_a < 0 || ang_coord_b < 0){
+        printf("Bad angular momentum vector. Components need to be positive.");
+        exit(1);
+    }
+
+    //general case. Protected from 2 negatives triggering by above exit command.
     if(ang_coord_a * ang_coord_b > 0){
         double s_lower = little_s(ang_coord_a-1, ang_coord_b-1, alpha, beta, center_a_coord, center_b_coord);
         double s_down_a = little_s(ang_coord_a-1, ang_coord_b+1, alpha, beta, center_a_coord, center_b_coord);
         double s_up_a = little_s(ang_coord_a+1, ang_coord_b-1, alpha, beta, center_a_coord, center_b_coord);
         double s_upper = little_s(ang_coord_a+1, ang_coord_b+1, alpha, beta, center_a_coord, center_b_coord);
         return (ang_coord_b*ang_coord_a*s_lower - 2*ang_coord_a*beta*s_down_a - 2*alpha*ang_coord_b*s_up_a + 4*alpha*beta*s_upper)/2;
-    }
-    if(ang_coord_a < 0 || ang_coord_b < 0){
-        printf("Bad angular momentum vector. Components need to be positive.");
-        exit(1);
     }
 }
 
