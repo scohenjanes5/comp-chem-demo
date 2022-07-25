@@ -58,7 +58,7 @@ int main(){
 
     double BS_overlap_matrix[BS_Size][BS_Size];
     int included_indicies[BS_Size] = {0,3,4,5,6,7,8};
-    // Calc_BS_OV_Matrix(orbital_array, BS_overlap_matrix, included_indicies);
+    Calc_BS_OV_Matrix(orbital_array, BS_overlap_matrix, included_indicies);
 
     // system("clear"); /*clear output screen*/
     // find little k_y for orbital 0 and orbital 8 (first primitive) (still opposite sign of tutorial)
@@ -363,7 +363,7 @@ void Calc_BS_OV_Matrix(struct Orbital orbital_array[Num_Orbitals], double overla
         int next_idx = indicies[i];
         used_orbitals[i] = orbital_array[next_idx];
     }
-    printf("overlap matrix:\n");
+    printf("Overlap matrix:\n");
     for(int i = 0; i < BS_Size; i++){
         for(int j = 0; j < BS_Size; j++){
             overlap_matrix[i][j] = orbital_overlap(used_orbitals[i], used_orbitals[j]);
@@ -427,7 +427,7 @@ double primitives_KE(int primitive_idx_a, int primitive_idx_b, struct Orbital or
     double beta = orbital_b.expC[primitive_idx_b];
     double sum_ab = alpha + beta;
     //The coordinates, however, are different.
-    double sum, EAB, pi_coeff, KE;
+    double EAB, pi_coeff, KE;
     double little_integrals[3][2]; //3 little s and 3 little k
 
     for(int i = 0; i < num_dimensions; i++){
@@ -436,13 +436,13 @@ double primitives_KE(int primitive_idx_a, int primitive_idx_b, struct Orbital or
         // printf("Little k: %lf\n", little_integrals[i][1]);//. Little s: %lf\n", i, little_integrals[i][1], little_integrals[i][0]);
     }
 
+    double sum = 0; //just declaring it and not setting to 0 first was bad news in some circumstances.
     for(int dim = 0; dim < num_dimensions; dim++){
         int dim_s_ii = (dim+1)%3;
         int dim_s_iii = (dim+2)%3;
         double k_i = little_integrals[dim][1]; //the little k
         double s_ii = little_integrals[dim_s_ii][0]; //the other dimensions' little s
         double s_iii = little_integrals[dim_s_iii][0];
-        // printf("K_%d(%d,%d)=%lf     S_%d(%d,%d)=%lf         S_%d(%d,%d)=%lf\n",dim,orbital_a.angular_momentum_vector[dim],orbital_b.angular_momentum_vector[dim],k_i,dim_s_ii,orbital_a.angular_momentum_vector[dim_s_ii], orbital_b.angular_momentum_vector[dim_s_ii],s_ii,dim_s_iii, orbital_a.angular_momentum_vector[dim_s_iii], orbital_b.angular_momentum_vector[dim_s_iii],s_iii);
         sum += k_i * s_ii * s_iii;
     }
 
@@ -459,12 +459,9 @@ double orbital_kinetic_energy_integral(struct Orbital orbital_a, struct Orbital 
     double KE = 0; //Not explicitly assigning to 0 breaks this.
     for(int i = 0; i < num_dimensions; i++){
         for(int j = 0; j < num_dimensions; j++){
-            // printf("nothing\n"); //This line does not affect output
-            printf("%d %d\n",i,j); //This line does affect output
             double prim_KE = primitives_KE(i, j, orbital_a, orbital_b);
-            // printf("%lf\n",prim_KE); //This line does affect output
-            KE += orbital_a.NormC[i]*orbital_b.NormC[j]*orbital_a.primC[i]*orbital_b.primC[j] * prim_KE;
-            // printf("Int of prims %d %d has KE of %lf\n", i, j, prim_KE); //commenting this out changes final answer somehow. Both states are still not right so keep checking out what could be wrong with this.
+            double prefactor = orbital_a.NormC[i]*orbital_b.NormC[j]*orbital_a.primC[i]*orbital_b.primC[j];
+            KE += prefactor * prim_KE;
         }
     }
     return KE;
@@ -481,13 +478,6 @@ void Calc_BS_KE_Matrix(struct Orbital orbital_array[Num_Orbitals], double KE_mat
     for(int i = 0; i < BS_Size; i++){
         for(int j = 0; j < BS_Size; j++){
             KE_matrix[i][j] = orbital_kinetic_energy_integral(used_orbitals[i], used_orbitals[j]);
-            // printf("    %lf", KE_matrix[i][j]);
-        }
-        // printf("\n");
-    }
-    for(int i = 0; i < BS_Size; i++){
-        for(int j = 0; j < BS_Size; j++){
-            // KE_matrix[i][j] = orbital_kinetic_energy_integral(used_orbitals[i], used_orbitals[j]);
             printf("    %lf", KE_matrix[i][j]);
         }
         printf("\n");
