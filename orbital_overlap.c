@@ -19,7 +19,8 @@ void get_coefs(struct Orbital orbital_array[BS_Size], FILE *coef_pointer);
 void calc_norm_const(struct Orbital orbital_array[Num_Orbitals]);
 double get_norm_denominator(int angular_momentum_vector[num_dimensions]);
 int fact2(int n);
-double dist_squared(struct Orbital orbital_a, struct Orbital orbital_b);
+double dist_squared(double coords_A[num_dimensions], double coords_B[num_dimensions]);
+void scalar_mult(double *coords_pt, double scalar);
 double primitive_overlap(int dim_a, int dim_b, struct Orbital orbital_a, struct Orbital orbital_b);
 double little_s(int ang_coord_a, int ang_coord_b, double alpha, double beta, double center_a_coord, double center_b_coord);
 double orbital_overlap(struct Orbital orbital_a, struct Orbital orbital_b);
@@ -200,10 +201,10 @@ void orbital_info(struct Orbital orb, int idx){
     printf("it is on atom #%d, which has atomic number %d\n----------------\n\n", orb.parent_atom_idx, orb.parent_atom_Z);
 }
 
-double dist_squared(struct Orbital orbital_a, struct Orbital orbital_b){
+double dist_squared(double coords_A[num_dimensions], double coords_B[num_dimensions]){
     double dist_squared = 0;   
     for (int i = 0; i < num_dimensions; i++){
-        dist_squared += pow(orbital_a.center[i] - orbital_b.center[i], 2);
+        dist_squared += pow(coords_A[i] - coords_B[i], 2);
     }
     return dist_squared;
 }
@@ -299,7 +300,7 @@ double primitive_overlap(int dim_a, int dim_b, struct Orbital orbital_a, struct 
     double al_bet = alpha + beta;
     double EAB, exponent, dist_squrd, Overlap;
     
-    dist_squrd = dist_squared(orbital_a, orbital_b);
+    dist_squrd = dist_squared(orbital_a.center, orbital_b.center);
     exponent = -(alpha * beta / al_bet) * dist_squrd;
     EAB = pow(M_E, exponent);
 
@@ -419,7 +420,7 @@ double primitives_KE(int primitive_idx_a, int primitive_idx_b, struct Orbital or
         sum += k_i * s_ii * s_iii;
     }
 
-    EAB = pow(M_E, -(alpha*beta/sum_ab)*dist_squared(orbital_a, orbital_b));
+    EAB = pow(M_E, -(alpha*beta/sum_ab)*dist_squared(orbital_a.center, orbital_b.center));
     pi_coeff = pow(M_PI/sum_ab, 1.5);
 
     KE = EAB * pi_coeff * sum;
