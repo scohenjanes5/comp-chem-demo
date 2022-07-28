@@ -29,6 +29,11 @@ double little_k(int ang_coord_a, int ang_coord_b, double alpha, double beta, dou
 double orbital_kinetic_energy_integral(struct Orbital orbital_a, struct Orbital orbital_b);
 double primitives_KE(int primitive_idx_a, int primitive_idx_b, struct Orbital orbital_a, struct Orbital orbital_b);
 void Calc_BS_KE_Matrix(struct Orbital orbital_array[Num_Orbitals], double KE_matrix[BS_Size][BS_Size], int indicies[BS_Size]);
+double abscissa(int n, int i);
+double boys_func(double x, int exp_a, int exp_b, struct Orbital orbital_a, struct Orbital orbital_b, double nuc_coords[num_dimensions]);
+double omega(int n, int i);
+double little_n(int ang_coord_a, int ang_coord_b, double alpha, double beta, double center_a_coord, double center_b_coord, double t, double nuc_coord);
+double chebychev_integral_boys(double tolerance, int num_points);
 
 int main(){
     //get info from files.
@@ -207,6 +212,12 @@ double dist_squared(double coords_A[num_dimensions], double coords_B[num_dimensi
         dist_squared += pow(coords_A[i] - coords_B[i], 2);
     }
     return dist_squared;
+}
+
+void scalar_mult(double *coords_pt, double scalar){ //uses pointers to multiply vector by scalar.
+    for(int i = 0; i < 3; i++){
+        *(coords_pt + i) = *(coords_pt + i) * scalar;
+    }
 }
 
 int fact2(int n){ //like normal factorial but decriment by 2 instead of 1.
@@ -457,3 +468,115 @@ void Calc_BS_KE_Matrix(struct Orbital orbital_array[Num_Orbitals], double KE_mat
         printf("\n");
     }
 }
+
+//nuclear attraction integrals can be rewritten as overlap integrals with ugly terms. We can still exploit this.
+//We will need to solve the Boys integral. Guidence by Minhuey Ho's tutorial.
+double abscissa(int n, int i){
+    double i_pi = M_PI * i;
+    double n_up = n + 1;
+    return (n_up -2 * i)/n_up + (2/M_PI) * (1 + (2/3) * pow(sin(i_pi/n_up), 2)) * cos(i_pi / n_up) * sin(i_pi / n_up);
+}
+
+double omega(int n, int i){
+    double n_up = n + 1;
+    return 16/3/n_up * pow(sin(M_PI * i / n_up), 4);
+}
+
+double little_n(int ang_coord_a, int ang_coord_b, double alpha, double beta, double center_a_coord, double center_b_coord, double t, double nuc_coord){
+    //nuc-elec interaction of two gaussian primitives
+    //initial conditions
+    if(ang_coord_a == 0 && ang_coord_b == 0){
+        // printf("n(0,0) = 1\n");
+        return 1;
+    }
+    double sum_ab = alpha + beta;
+    double aA_bB = alpha * center_a_coord + beta * center_b_coord;
+    double basic_int_1 = -(center_a_coord - (aA_bB / sum_ab));
+    double basic_int_2 = pow(t, 2) * ((aA_bB / sum_ab) - nuc_coord);
+
+    if(ang_coord_a == 1 && ang_coord_b == 0){
+        return basic_int_1 + basic_int_2;
+    }
+    //recurrence index
+    if(ang_coord_a > 0 && ang_coord_b == 0 ){
+        // printf("n(%d,%d) needs extra little n'\n", ang_coord_a, ang_coord_b);
+        double a_down = little_n(ang_coord_a-1, 0, alpha, beta, center_a_coord, center_b_coord, t, nuc_coord);
+        double a_down2 = little_n(ang_coord_a-2, 0, alpha, beta, center_a_coord, center_b_coord, t, nuc_coord);
+        // printf("n(%d,%d) little n's %lf %lf\n",ang_coord_a, ang_coord_b, a_down, a_down2);
+        return basic_int_1 + basic_int_2 * a_down + ((ang_coord_a - 1)/(2 * sum_ab)) * (1 - pow(t, 2)) * a_down2;
+    }
+    //transfer equation
+    if (ang_coord_a > 0 && ang_coord_b > 0){
+        // printf("n(%d,%d) needs extra little n'\n", ang_coord_a, ang_coord_b);
+        double aup_bdown = little_n(ang_coord_a+1, ang_coord_b - 1, alpha, beta, center_a_coord, center_b_coord, t, nuc_coord);
+        double b_down = little_n(ang_coord_a, ang_coord_b - 1, alpha, beta, center_a_coord, center_b_coord, t, nuc_coord);
+        // printf("n(%d,%d) little n's %lf %lf\n",ang_coord_a, ang_coord_b, aup_bdown, b_down);
+        return aup_bdown + (center_a_coord - center_b_coord) * b_down;  
+    }
+
+    if(ang_coord_a < 0 || ang_coord_b < 0){
+        printf("Bad angular momentum vector. Components need to be positive.");
+        exit(1);
+    }
+}
+
+
+double boys_func(double x, int exp_a, int exp_b, struct Orbital orbital_a, struct Orbital orbital_b, double nuc_coords[num_dimensions]){
+    double alpha = orbital_a.expC[exp_a];
+    double beta = orbital_b.expC[exp_b];
+    double sum_ab = alpha + beta;
+    double t = (x+1)/2;
+
+    double dummy_a[num_dimensions], dummy_b[num_dimensions], aA_bB[num_dimensions];
+    for (int i = 0; i < num_dimensions; i++){
+        dummy_a[i] = orbital_a.center[i];
+        dummy_b[i] = orbital_b.center[i];
+    }
+
+    scalar_mult(dummy_a, alpha); // aA
+    scalar_mult(dummy_b, beta); // bB
+
+    for(int i = 0; i < num_dimensions; i++){
+        aA_bB[i] = dummy_a[i] + dummy_b[i]; //vector addition
+    }
+    scalar_mult(aA_bB, 1/sum_ab); //scale the vector
+    
+    double product = 1;
+    for(int i = 0; i < num_dimensions; i++){
+        aA_bB[i] = aA_bB[i] - nuc_coords[i]; //vector subtraction.
+        product *= little_n(orbital_a.angular_momentum_vector[i], orbital_b.angular_momentum_vector[i], alpha, beta, orbital_a.center[i], orbital_b.center[i], t, nuc_coords[i]);
+    }
+
+    double big_const = dist_squared(aA_bB, aA_bB); //((alpha * A_coords + beta * B_coords) / (sum_ab)) - nuc_coord dotted into itself (i.e. dist squared.)
+    double simple_part = 0.5 * pow(M_E, -(sum_ab * pow(t, 2) * big_const));
+
+    return simple_part * product;
+}
+
+// double chebychev_integral_boys(double tolerance, int num_points, int exp_a, int exp_b, struct Orbital orbital_a, struct Orbital orbital_b, double nuc_coords[num_dimensions]){ //ideally pass boys function as arg but we only need to solve this integral so it is just baked into the function.
+//     //set some parameters
+//     const double c0 = cos(M_PI/6);
+//     const double s0 = cos(M_PI/6);
+//     double c1, s1, q, p, chp, j, c, s, xp;
+//     int err = 10;
+//     int n = 3;
+
+//     for(int i = 1; i < n; i += 2){
+//         c1 = s0
+//         s1 = c0
+
+//         double bf_a_plus = boys_func(abscissa(2,1), int exp_a, int exp_b, struct Orbital orbital_a, struct Orbital orbital_b, double nuc_coords[num_dimensions]);
+//         double bf_a_minus = boys_func(-abscissa(2,1), int exp_a, int exp_b, struct Orbital orbital_a, struct Orbital orbital_b, double nuc_coords[num_dimensions]);
+        
+//         q = bf_a_plus * bf_a_minus * omega(2,1);
+//         p = boys_func(0.0, int exp_a, int exp_b, struct Orbital orbital_a, struct Orbital orbital_b, double nuc_coords[num_dimensions])
+
+//         chp = p + q
+
+//         j = 0
+
+        
+//     }
+
+
+// }
