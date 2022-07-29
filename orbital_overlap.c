@@ -68,8 +68,8 @@ int main(){
     Calc_BS_OV_Matrix(orbital_array, BS_overlap_matrix, included_indicies);
 
     // system("clear"); /*clear output screen*/
-    // struct Orbital orbital_a = orbital_array[0];
-    // struct Orbital orbital_b = orbital_array[8];
+    struct Orbital orbital_a = orbital_array[0];
+    struct Orbital orbital_b = orbital_array[8];
     
     // KE integral for first primatives of orbital 0 (1s_x on H1) with orbital 8 (Pz_x on O) 
     // KE = primitives_KE(0, orbital_array[0], orbital_array[8]);
@@ -85,6 +85,13 @@ int main(){
 
     //KE overlap integral
     Calc_BS_KE_Matrix(orbital_array, BS_overlap_matrix, included_indicies);
+
+    //testing NE functions
+    double results;
+    // results = little_n(0, 0, orbital_a.expC[0], orbital_b.expC[0], orbital_a.center[0], orbital_b.center[0], 0, orbital_a.center[0]);
+    // results = exp(-(orbital_a.expC[0] * orbital_b.expC[0])/(orbital_a.expC[0] + orbital_b.expC[0]) * dist_squared(orbital_a.center, orbital_b.center))
+    //     * (2 * M_PI / (orbital_a.expC[0] + orbital_b.expC[0]));
+    printf("Results: %lf\n", results);
 
     return 0;
 }
@@ -601,9 +608,10 @@ double chebychev_integral_boys(int exp_a, int exp_b, struct Orbital orbital_a, s
 double N_e_attraction(int exp_a, int exp_b, struct Orbital orbital_a, struct Orbital orbital_b, double nuc_coords[num_dimensions]){
     double alpha = orbital_a.expC[exp_a];
     double beta = orbital_b.expC[exp_b];
-    sum_ab = alpha + beta;
+    double sum_ab = alpha + beta;
 
-    double EAB = exp(-(alpha * beta)/sum_ab) * dist_squared(orbital_a.center, orbital_b.center);
+    double EAB = exp(-(alpha * beta)/sum_ab * dist_squared(orbital_a.center, orbital_b.center));
+    // printf("EAB %lf\n", EAB);
     
     return EAB * (2 * M_PI / sum_ab) * chebychev_integral_boys(exp_a, exp_b, orbital_a, orbital_b, nuc_coords);
 }
