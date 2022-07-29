@@ -313,7 +313,7 @@ double primitive_overlap(int dim_a, int dim_b, struct Orbital orbital_a, struct 
     
     dist_squrd = dist_squared(orbital_a.center, orbital_b.center);
     exponent = -(alpha * beta / al_bet) * dist_squrd;
-    EAB = pow(M_E, exponent);
+    EAB = exp(exponent);
 
     Overlap = EAB * pow((M_PI / al_bet), 1.5);
     // printf("Overlap Coeff is %lf\n", Overlap);
@@ -431,7 +431,7 @@ double primitives_KE(int primitive_idx_a, int primitive_idx_b, struct Orbital or
         sum += k_i * s_ii * s_iii;
     }
 
-    EAB = pow(M_E, -(alpha*beta/sum_ab)*dist_squared(orbital_a.center, orbital_b.center));
+    EAB = exp(-(alpha*beta/sum_ab)*dist_squared(orbital_a.center, orbital_b.center));
     pi_coeff = pow(M_PI/sum_ab, 1.5);
 
     KE = EAB * pi_coeff * sum;
@@ -548,7 +548,7 @@ double boys_func(double x, int exp_a, int exp_b, struct Orbital orbital_a, struc
     }
 
     double big_const = dist_squared(aA_bB, aA_bB); //((alpha * A_coords + beta * B_coords) / (sum_ab)) - nuc_coord dotted into itself (i.e. dist squared.)
-    double simple_part = 0.5 * pow(M_E, -(sum_ab * pow(t, 2) * big_const));
+    double simple_part = 0.5 * exp(-(sum_ab * pow(t, 2) * big_const));
 
     return simple_part * product;
 }
