@@ -33,7 +33,7 @@ double abscissa(int n, int i);
 double boys_func(double x, int exp_a, int exp_b, struct Orbital orbital_a, struct Orbital orbital_b, double nuc_coords[num_dimensions]);
 double omega(int n, int i);
 double little_n(int ang_coord_a, int ang_coord_b, double alpha, double beta, double center_a_coord, double center_b_coord, double t, double nuc_coord);
-double chebychev_integral_boys(double tolerance, int num_points);
+double chebychev_integral_boys(double tolerance, int num_points, int exp_a, int exp_b, struct Orbital orbital_a, struct Orbital orbital_b, double nuc_coords[num_dimensions]);
 
 int main(){
     //get info from files.
@@ -67,8 +67,8 @@ int main(){
     Calc_BS_OV_Matrix(orbital_array, BS_overlap_matrix, included_indicies);
 
     // system("clear"); /*clear output screen*/
-    struct Orbital orbital_a = orbital_array[0];
-    struct Orbital orbital_b = orbital_array[8];
+    // struct Orbital orbital_a = orbital_array[0];
+    // struct Orbital orbital_b = orbital_array[8];
     
     // KE integral for first primatives of orbital 0 (1s_x on H1) with orbital 8 (Pz_x on O) 
     // KE = primitives_KE(0, orbital_array[0], orbital_array[8]);
@@ -555,28 +555,41 @@ double boys_func(double x, int exp_a, int exp_b, struct Orbital orbital_a, struc
 
 // double chebychev_integral_boys(double tolerance, int num_points, int exp_a, int exp_b, struct Orbital orbital_a, struct Orbital orbital_b, double nuc_coords[num_dimensions]){ //ideally pass boys function as arg but we only need to solve this integral so it is just baked into the function.
 //     //set some parameters
-//     const double c0 = cos(M_PI/6);
-//     const double s0 = cos(M_PI/6);
+//     double c0 = cos(M_PI/6);
+//     double s0 = cos(M_PI/6);
 //     double c1, s1, q, p, chp, j, c, s, xp;
-//     int err = 10;
+//     float err = 10;
 //     int n = 3;
 
-//     for(int i = 1; i < n; i += 2){
-//         c1 = s0
-//         s1 = c0
+//     double bf_a_plus = boys_func(abscissa(2,1), exp_a, exp_b, orbital_a, orbital_b, nuc_coords);
+//     double bf_a_minus = boys_func(-abscissa(2,1), exp_a, exp_b, orbital_a, orbital_b, nuc_coords);
+    
+//     q = bf_a_plus * bf_a_minus * omega(2,1);
+//     p = boys_func(0.0, exp_a, exp_b, orbital_a, orbital_b, nuc_coords);
 
-//         double bf_a_plus = boys_func(abscissa(2,1), int exp_a, int exp_b, struct Orbital orbital_a, struct Orbital orbital_b, double nuc_coords[num_dimensions]);
-//         double bf_a_minus = boys_func(-abscissa(2,1), int exp_a, int exp_b, struct Orbital orbital_a, struct Orbital orbital_b, double nuc_coords[num_dimensions]);
-        
-//         q = bf_a_plus * bf_a_minus * omega(2,1);
-//         p = boys_func(0.0, int exp_a, int exp_b, struct Orbital orbital_a, struct Orbital orbital_b, double nuc_coords[num_dimensions])
-
-//         chp = p + q
-
-//         j = 0
-
-        
+//     chp = p + q;
+//     j = 0;
+//     c1 = s0;
+//     s1 = c0;
+//     while(tolerance < err && (2* n * (1 - j) + j * 4 * n / 3 - 1) <= num_points){
+//         j = 1 - j;
+//         c1 = j * c1 + (1 - j) * c0;
+//         s1 = j * s1 + (1 - j) * s0;
+//         c0 = j * c0 + (1 - j) * sqrt((1 + c0) * 0.5);
+//         s0 = j * s0 + (1 - j) * s0 / (c0 + c0);
+//         c = c0;
+//         s = s0;
+//         for(int i = 1; i < n; i += 2){
+//             xp = s;
+//             s = s * c1 + c * s1;
+//             c = c * c1 - xp * s1;        
+//         }
+//         n = (1 + j) * n;
+//         p = p + (1 - j) * (chp - q);
+//         err = 16 * fabs((1 - j) * (q - 3*p/2) + j * (chp -2*q)) / (3*n);
+//         q = (1 - j)*q + j*chp;
+//         printf("tolerance < err && expression <= numpoints\n");
+//         printf("%lf   %lf           %lf         %d\n",tolerance, err, (2* n * (1 - j) + j * 4 * n / 3 - 1), num_points);
 //     }
-
-
+//     return 16 * q / (3 * n);
 // }
