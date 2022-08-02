@@ -123,6 +123,47 @@ def S(a,b):
             b.exps[j],b.shell,b.origin)
     return s
 
+def kinetic(a,lmn1,A,b,lmn2,B):
+    '''
+    Evaluates kinetic energy integral between two Gaussians
+    Returns a float.
+    a: orbital exponent on Gaussian 'a' (e.g. alpha in the text)
+    b: orbital exponent on Gaussian 'b' (e.g. beta in the text)
+    lmn1: int tuple containing orbital angular momentum (e.g. (1,0,0))
+    for Gaussian 'a'
+    lmn2: int tuple containing orbital angular momentum for Gaussian 'b'
+    A: list containing origin of Gaussian 'a', e.g. [1.0, 2.0, 0.0]
+    B: list containing origin of Gaussian 'b'
+    '''
+    l1,m1,n1 = lmn1
+    l2,m2,n2 = lmn2
+    term0 = b*(2*(l2+m2+n2)+3)*\
+        overlap(a,(l1,m1,n1),A,b,(l2,m2,n2),B)
+    term1 = -2*np.power(b,2)*\
+        (overlap(a,(l1,m1,n1),A,b,(l2+2,m2,n2),B) +
+        overlap(a,(l1,m1,n1),A,b,(l2,m2+2,n2),B) +
+        overlap(a,(l1,m1,n1),A,b,(l2,m2,n2+2),B))
+    term2 = -0.5*(l2*(l2-1)*overlap(a,(l1,m1,n1),A,b,(l2-2,m2,n2),B) +
+        m2*(m2-1)*overlap(a,(l1,m1,n1),A,b,(l2,m2-2,n2),B) +
+        n2*(n2-1)*overlap(a,(l1,m1,n1),A,b,(l2,m2,n2-2),B))
+    return term0+term1+term2
+    
+def T(a,b):
+    '''
+    Evaluates kinetic energy between two contracted Gaussians
+    Returns float.
+    Arguments:
+    a: contracted Gaussian 'a', BasisFunction object
+    b: contracted Gaussian 'b', BasisFunction object
+    '''
+    t = 0.0
+    for i, ca in enumerate(a.coefs):
+        for j, cb in enumerate(b.coefs):
+            t += a.norm[i]*b.norm[j]*ca*cb*\
+                kinetic(a.exps[i],a.shell,a.origin,
+                b.exps[j],b.shell,b.origin)
+    return t
+
 myOrigin = [1.0, 2.0, 3.0]
 orig2 = [1.5, 2.0, 3.0]
 myShell = (0,0,0) # p‐orbitals would be (1,0,0) or (0,1,0) or (0,0,1), etc.
@@ -130,4 +171,5 @@ myExps = [3.42525091, 0.62391373, 0.16885540]
 myCoefs = [0.15432897, 0.53532814, 0.44463454]
 a = BasisFunction(origin=myOrigin,shell=myShell,exps=myExps,coefs=myCoefs)
 b = BasisFunction(origin=orig2,shell=myShell,exps=myExps,coefs=myCoefs)
-print(S(a,b))
+print(S(a,a)) #1 if normallized properly
+print(T(a,a)) #.76 (1/2 hartree)
