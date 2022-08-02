@@ -137,15 +137,17 @@ def kinetic(a,lmn1,A,b,lmn2,B):
     '''
     l1,m1,n1 = lmn1
     l2,m2,n2 = lmn2
-    term0 = b*(2*(l2+m2+n2)+3)*\
-        overlap(a,(l1,m1,n1),A,b,(l2,m2,n2),B)
+    term0 = b*(2*(l2+m2+n2)+3)*overlap(a,lmn1,A,b,lmn2,B)
+
     term1 = -2*np.power(b,2)*\
-        (overlap(a,(l1,m1,n1),A,b,(l2+2,m2,n2),B) +
-        overlap(a,(l1,m1,n1),A,b,(l2,m2+2,n2),B) +
-        overlap(a,(l1,m1,n1),A,b,(l2,m2,n2+2),B))
-    term2 = -0.5*(l2*(l2-1)*overlap(a,(l1,m1,n1),A,b,(l2-2,m2,n2),B) +
-        m2*(m2-1)*overlap(a,(l1,m1,n1),A,b,(l2,m2-2,n2),B) +
-        n2*(n2-1)*overlap(a,(l1,m1,n1),A,b,(l2,m2,n2-2),B))
+        (overlap(a,lmn1,A,b,(l2+2,m2,n2),B) +
+        overlap(a,lmn1,A,b,(l2,m2+2,n2),B) +
+        overlap(a,lmn1,A,b,(l2,m2,n2+2),B))
+
+    term2 = -0.5*(l2*(l2-1)*overlap(a,lmn1,A,b,(l2-2,m2,n2),B) +
+        m2*(m2-1)*overlap(a,lmn1,A,b,(l2,m2-2,n2),B) +
+        n2*(n2-1)*overlap(a,lmn1,A,b,(l2,m2,n2-2),B))
+        
     return term0+term1+term2
     
 def T(a,b):
@@ -173,3 +175,5 @@ a = BasisFunction(origin=myOrigin,shell=myShell,exps=myExps,coefs=myCoefs)
 b = BasisFunction(origin=orig2,shell=myShell,exps=myExps,coefs=myCoefs)
 print(S(a,a)) #1 if normallized properly
 print(T(a,a)) #0.760032 hartree is the electronic kinetic energy of the hydrogen atom described by the STO-3G basis set (compared to the exact value of 0.5 hartree).
+
+
