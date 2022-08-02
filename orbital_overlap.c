@@ -65,7 +65,7 @@ int main(){
 
     double BS_overlap_matrix[BS_Size][BS_Size];
     int included_indicies[BS_Size] = {0,3,4,5,6,7,8};
-    Calc_BS_OV_Matrix(orbital_array, BS_overlap_matrix, included_indicies);
+    // Calc_BS_OV_Matrix(orbital_array, BS_overlap_matrix, included_indicies);
 
     // system("clear"); /*clear output screen*/
     struct Orbital orbital_a = orbital_array[0];
@@ -84,13 +84,22 @@ int main(){
     // Int of prims 0 0 has KE of -0.167203 is output. Correct
 
     //KE overlap integral
-    Calc_BS_KE_Matrix(orbital_array, BS_overlap_matrix, included_indicies);
+    // Calc_BS_KE_Matrix(orbital_array, BS_overlap_matrix, included_indicies);
 
     //testing NE functions
     double results;
     // results = little_n(0, 0, orbital_a.expC[0], orbital_b.expC[0], orbital_a.center[0], orbital_b.center[0], 0, orbital_a.center[0]);
     // results = exp(-(orbital_a.expC[0] * orbital_b.expC[0])/(orbital_a.expC[0] + orbital_b.expC[0]) * dist_squared(orbital_a.center, orbital_b.center))
     //     * (2 * M_PI / (orbital_a.expC[0] + orbital_b.expC[0]));
+    // results = little_n(0, 0, orbital_a.expC[0], orbital_b.expC[0], orbital_a.center[1], orbital_b.center[1], 0, orbital_a.center[1]);
+    // results = little_n(0, 1, orbital_a.expC[0], orbital_b.expC[0], orbital_a.center[2], orbital_b.center[2], 0, orbital_a.center[2]);
+    // printf("Results: %lf\n", results);
+
+    // printf("----------------------\n");
+
+    // results = little_n(1, 0, orbital_a.expC[0], orbital_b.expC[0], orbital_a.center[2], orbital_b.center[2], 0, orbital_a.center[2]); + (orbital_a.center[2] - orbital_b.center[2]);
+
+    results = N_e_attraction(0,0, orbital_a, orbital_b, orbital_a.center);
     printf("Results: %lf\n", results);
 
     return 0;
@@ -493,41 +502,47 @@ double omega(int n, int i){
 double little_n(int ang_coord_a, int ang_coord_b, double alpha, double beta, double center_a_coord, double center_b_coord, double t, double nuc_coord){
     //nuc-elec interaction of two gaussian primitives
     //initial conditions
+    printf("n(%d,%d)\n", ang_coord_a, ang_coord_b);
+    // printf("params n(%d,%d), a=%lf, b=%lf, A=%lf, B=%lf, t=%lf, RR=%lf\n", ang_coord_a, ang_coord_b, alpha, beta, center_a_coord, center_b_coord, t, nuc_coord);
     if(ang_coord_a == 0 && ang_coord_b == 0){
-        // printf("n(0,0) = 1\n");
+        printf("n(0,0) = 1\n");
         return 1;
     }
     double sum_ab = alpha + beta;
     double aA_bB = alpha * center_a_coord + beta * center_b_coord;
     double basic_int_1 = -(center_a_coord - (aA_bB / sum_ab));
-    double basic_int_2 = pow(t, 2) * ((aA_bB / sum_ab) - nuc_coord);
-
+    double basic_int_2 = pow(t, 2) * (aA_bB/sum_ab - nuc_coord);
+    printf("basic integrals %lf     %lf\n", basic_int_1, basic_int_2);
     if(ang_coord_a == 1 && ang_coord_b == 0){
+        printf("Basic solution with a=1 b=0\n");
+        // printf("%lf     %lf\n", basic_int_1, basic_int_2);
         return basic_int_1 + basic_int_2;
     }
     //recurrence index
-    if(ang_coord_a > 0 && ang_coord_b == 0 ){
-        // printf("n(%d,%d) needs extra little n'\n", ang_coord_a, ang_coord_b);
+    if(ang_coord_a > 1 && ang_coord_b == 0 ){
+        printf("recurrence\n");
+        printf("n(%d,%d) needs extra little n'\n", ang_coord_a, ang_coord_b);
         double a_down = little_n(ang_coord_a-1, 0, alpha, beta, center_a_coord, center_b_coord, t, nuc_coord);
         double a_down2 = little_n(ang_coord_a-2, 0, alpha, beta, center_a_coord, center_b_coord, t, nuc_coord);
-        // printf("n(%d,%d) little n's %lf %lf\n",ang_coord_a, ang_coord_b, a_down, a_down2);
+        printf("n(%d,%d) little n's %lf %lf\n",ang_coord_a, ang_coord_b, a_down, a_down2);
         return basic_int_1 + basic_int_2 * a_down + ((ang_coord_a - 1)/(2 * sum_ab)) * (1 - pow(t, 2)) * a_down2;
     }
-    //transfer equation
-    if (ang_coord_a > 0 && ang_coord_b > 0){
-        // printf("n(%d,%d) needs extra little n'\n", ang_coord_a, ang_coord_b);
-        double aup_bdown = little_n(ang_coord_a+1, ang_coord_b - 1, alpha, beta, center_a_coord, center_b_coord, t, nuc_coord);
-        double b_down = little_n(ang_coord_a, ang_coord_b - 1, alpha, beta, center_a_coord, center_b_coord, t, nuc_coord);
-        // printf("n(%d,%d) little n's %lf %lf\n",ang_coord_a, ang_coord_b, aup_bdown, b_down);
+    //transfer equation. Fallback if other options not hit.
+    if (ang_coord_a >= 0 || ang_coord_b >= 0){
+        printf("transfer\n");
+        printf("n(%d,%d) needs extra little n'\n", ang_coord_a, ang_coord_b);
+        double aup_bdown = little_n(ang_coord_a+1, ang_coord_b-1, alpha, beta, center_a_coord, center_b_coord, t, nuc_coord);
+        double b_down = little_n(ang_coord_a, ang_coord_b-1, alpha, beta, center_a_coord, center_b_coord, t, nuc_coord);
+        printf("n(%d,%d) little n's %lf %lf\n", ang_coord_a, ang_coord_b, aup_bdown, b_down);
         return aup_bdown + (center_a_coord - center_b_coord) * b_down;  
     }
-
+    // in case of bad inputs.
     if(ang_coord_a < 0 || ang_coord_b < 0){
         printf("Bad angular momentum vector. Components need to be positive.");
-        exit(1);
+        return 1;
+        // exit(1);
     }
 }
-
 
 double boys_func(double x, int exp_a, int exp_b, struct Orbital orbital_a, struct Orbital orbital_b, double nuc_coords[num_dimensions]){
     double alpha = orbital_a.expC[exp_a];
@@ -591,6 +606,12 @@ double chebychev_integral_boys(int exp_a, int exp_b, struct Orbital orbital_a, s
         c = c0;
         s = s0;
         for(int i = 1; i < n; i += 2){
+            xp = 1 + 2/(3 * M_PI) * s * c * (3 + 2 * s * s) - i/n;
+            if(ceil(3 * (i + j + j) / 3) > 1 + j){
+                chp += boys_func(-xp, exp_a, exp_b, orbital_a, orbital_b, nuc_coords)
+                        + boys_func(xp, exp_a, exp_b, orbital_a, orbital_b, nuc_coords)
+                        * pow(s, 4);
+            }
             xp = s;
             s = s * c1 + c * s1;
             c = c * c1 - xp * s1;        
@@ -599,8 +620,10 @@ double chebychev_integral_boys(int exp_a, int exp_b, struct Orbital orbital_a, s
         p = p + (1 - j) * (chp - q);
         err = 16 * fabs((1 - j) * (q - 3*p/2) + j * (chp -2*q)) / (3*n); //error estimates
         q = (1 - j)*q + j*chp;
-        printf("tolerance < err && expression <= numpoints\n");
-        printf("%lf   %lf           %lf         %d\n", tolerance, err, (2* n * (1 - j) + j * 4 * n / 3 - 1), num_points);
+        // printf("tolerance < err && expression <= numpoints\n");
+        printf("%lf   %lf   %lf         %d\n", tolerance, err, (2* n * (1 - j) + j * 4 * n / 3 - 1), num_points);
+        // printf("j = %lf, p = %lf\n", j, p);
+        // printf("q = %lf, n = %lf\n", q, n);
     }
     return 16 * q / (3 * n);
 }
