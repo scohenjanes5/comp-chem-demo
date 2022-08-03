@@ -1,7 +1,8 @@
 #include <stdio.h>
 #include <math.h>
 #define EPS 10E-10
-double pochhammer(double a, double n);
+//https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.hyp1f1.html
+//https://dlmf.nist.gov/13.2#E2
 double hyp1f1_clone(double a, double b, double x);
 
 int main(){
@@ -23,12 +24,3 @@ double hyp1f1_clone(double a, double b, double x){
     }
     return result;
 }
-
-double pochhammer(double a, double n){
-    if(n == 1){
-        return 1.0;
-    } else {
-        return (a + n - 1) * pochhammer(a, n - 1);
-    }
-}
-
