@@ -262,7 +262,8 @@ myExps = [3.42525091, 0.62391373, 0.16885540]
 myCoefs = [0.15432897, 0.53532814, 0.44463454]
 a = BasisFunction(origin=myOrigin,shell=myShell,exps=myExps,coefs=myCoefs)
 b = BasisFunction(origin=orig2,shell=myShell,exps=myExps,coefs=myCoefs)
-print(S(a,a)) #1 if normallized properly
-print(T(a,a)) #0.760032 hartree is the electronic kinetic energy of the hydrogen atom described by the STO-3G basis set (compared to the exact value of 0.5 hartree).
-print(V(a,a,myOrigin))
+# print(S(a,a)) #1 if normallized properly
+# print(T(a,a)) #0.760032 hartree is the electronic kinetic energy of the hydrogen atom described by the STO-3G basis set (compared to the exact value of 0.5 hartree).
+# print(V(a,a,myOrigin))
 
+print(hyp1f1(1,2,3))
