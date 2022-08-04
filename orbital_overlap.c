@@ -564,12 +564,6 @@ double little_n(int ang_coord_a, int ang_coord_b, double alpha, double beta, dou
 //     return hyp1f1_clone(n+0.5, n+1.5, -T) / (2*n + 1);
 // }
 
-// double R(int t, int u, int v, double n, double p, struct Orbital orbital_a, struct Orbital orbital_b, double nuc_coords[num_dimensions]){
-//     // from goings' tutorial. Return coulomb auxiliary integrals (little_n() refactored).
-//     double p = alpha + beta;
-//     double T = p * 
-// }
-
 double boys_func(double x, int exp_a, int exp_b, struct Orbital orbital_a, struct Orbital orbital_b, double nuc_coords[num_dimensions]){
     double alpha = orbital_a.expC[exp_a];
     double beta = orbital_b.expC[exp_b];
