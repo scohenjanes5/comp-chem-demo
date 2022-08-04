@@ -531,7 +531,7 @@ double little_n(int ang_coord_a, int ang_coord_b, double alpha, double beta, dou
         return basic_int_1 + basic_int_2 * a_down + ((ang_coord_a - 1)/(2 * sum_ab)) * (1 - pow(t, 2)) * a_down2;
     }
     //transfer equation. Fallback if other options not hit.
-    if (ang_coord_a >= 0 || ang_coord_b >= 0){
+    if (ang_coord_a >= 0 || ang_coord_b >= 1){
         // printf("transfer\n");
         // printf("n(%d,%d) needs extra little n'\n", ang_coord_a, ang_coord_b);
         double aup_bdown = little_n(ang_coord_a+1, ang_coord_b-1, alpha, beta, center_a_coord, center_b_coord, t, nuc_coord);
