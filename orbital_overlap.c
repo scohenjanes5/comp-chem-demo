@@ -34,6 +34,7 @@ double abscissa(int n, int i);
 double boys_func(double x, int exp_a, int exp_b, struct Orbital orbital_a, struct Orbital orbital_b, double nuc_coords[num_dimensions]);
 double omega(int n, int i);
 double little_n(int ang_coord_a, int ang_coord_b, double alpha, double beta, double center_a_coord, double center_b_coord, double t, double nuc_coord);
+double alt_little_n(int ang_coord_a, int ang_coord_b, double alpha, double beta, double center_a_coord, double center_b_coord, double t, double nuc_coord);
 double chebychev_integral_boys(int exp_a, int exp_b, struct Orbital orbital_a, struct Orbital orbital_b, double nuc_coords[num_dimensions]);
 double N_e_attraction(int exp_a, int exp_b, struct Orbital orbital_a, struct Orbital orbital_b, double nuc_coords[num_dimensions]);
 double hyp1f1_clone(double a, double b, double x);
@@ -90,18 +91,22 @@ int main(){
 
     //testing NE functions
     double results;
-    // results = little_n(0, 0, orbital_a.expC[0], orbital_b.expC[0], orbital_a.center[0], orbital_b.center[0], 0, orbital_a.center[0]);
+    int alpha = 0;
+    int beta = 0;
+    double t2_coefs[10]; //maybe there is a way to tell how big the polynomial order will get. 
+                        //index is n in t^(2n). 
+    results = alt_little_n(0, 0, orbital_a.expC[0], orbital_b.expC[0], orbital_a.center[0], orbital_b.center[0], 0, orbital_a.center[0]);
     // results = exp(-(orbital_a.expC[0] * orbital_b.expC[0])/(orbital_a.expC[0] + orbital_b.expC[0]) * dist_squared(orbital_a.center, orbital_b.center))
-    //     * (2 * M_PI / (orbital_a.expC[0] + orbital_b.expC[0]));
-    // results = little_n(0, 0, orbital_a.expC[0], orbital_b.expC[0], orbital_a.center[1], orbital_b.center[1], 0, orbital_a.center[1]);
-    // results = little_n(0, 1, orbital_a.expC[0], orbital_b.expC[0], orbital_a.center[2], orbital_b.center[2], 0, orbital_a.center[2]);
-    // printf("Results: %lf\n", results);
+        // * (2 * M_PI / (orbital_a.expC[0] + orbital_b.expC[0]));
+    // results = alt_little_n(0, 0, orbital_a.expC[0], orbital_b.expC[0], orbital_a.center[1], orbital_b.center[1], 0, orbital_a.center[1]);
+    // results = alt_little_n(0, 1, orbital_a.expC[0], orbital_b.expC[0], orbital_a.center[2], orbital_b.center[2], 0, orbital_a.center[2]);
+    printf("Results: %lf\n", results);
 
-    // printf("----------------------\n");
+    printf("----------------------\n");
 
-    // results = little_n(1, 0, orbital_a.expC[0], orbital_b.expC[0], orbital_a.center[2], orbital_b.center[2], 0, orbital_a.center[2]); + (orbital_a.center[2] - orbital_b.center[2]);
+    results = alt_little_n(1, 0, orbital_a.expC[0], orbital_b.expC[0], orbital_a.center[2], orbital_b.center[2], 0, orbital_a.center[2]); + (orbital_a.center[2] - orbital_b.center[2]);
 
-    results = N_e_attraction(0,0, orbital_a, orbital_b, orbital_a.center);
+    // results = N_e_attraction(0,0, orbital_a, orbital_b, orbital_a.center);
     printf("Results: %lf\n", results);
 
     return 0;
@@ -531,11 +536,64 @@ double little_n(int ang_coord_a, int ang_coord_b, double alpha, double beta, dou
         return basic_int_1 + basic_int_2 * a_down + ((ang_coord_a - 1)/(2 * sum_ab)) * (1 - pow(t, 2)) * a_down2;
     }
     //transfer equation. Fallback if other options not hit.
-    if (ang_coord_a >= 0 || ang_coord_b >= 0){
+    if (ang_coord_a >= 0 || ang_coord_b >= 1){
         // printf("transfer\n");
         // printf("n(%d,%d) needs extra little n'\n", ang_coord_a, ang_coord_b);
         double aup_bdown = little_n(ang_coord_a+1, ang_coord_b-1, alpha, beta, center_a_coord, center_b_coord, t, nuc_coord);
         double b_down = little_n(ang_coord_a, ang_coord_b-1, alpha, beta, center_a_coord, center_b_coord, t, nuc_coord);
+        // printf("n(%d,%d) little n's %lf %lf\n", ang_coord_a, ang_coord_b, aup_bdown, b_down);
+        return aup_bdown + (center_a_coord - center_b_coord) * b_down;  
+    }
+    // in case of bad inputs.
+    if(ang_coord_a < 0 || ang_coord_b < 0){
+        printf("Bad angular momentum vector. Components need to be positive.");
+        return 1;
+        // exit(1);
+    }
+}
+
+double alt_little_n(int ang_coord_a, int ang_coord_b, double alpha, double beta, double center_a_coord, double center_b_coord, double t, double nuc_coord){
+    double Tsquared_coef = 0.0;
+    double t_0_coef = 0.0;
+    //nuc-elec interaction of two gaussian primitives
+    //initial conditions
+    // printf("n(%d,%d)\n", ang_coord_a, ang_coord_b);
+    // printf("params n(%d,%d), a=%lf, b=%lf, A=%lf, B=%lf, t=%lf, RR=%lf\n", ang_coord_a, ang_coord_b, alpha, beta, center_a_coord, center_b_coord, t, nuc_coord);
+    if(ang_coord_a == 0 && ang_coord_b == 0){
+        printf("%lft^2\n", Tsquared_coef);
+        // printf("n(0,0) = 1\n");
+        t_0_coef = 1;
+        printf("%lft^2\n", t_0_coef);
+        return 1;
+    }
+    double p = alpha + beta;
+    double aA_bB = alpha * center_a_coord + beta * center_b_coord;
+    double QC = -(center_a_coord - (aA_bB / p));
+    Tsquared_coef = (aA_bB/p - nuc_coord);
+    double basic_int_2 = pow(t, 2) * Tsquared_coef;
+    
+    // printf("basic integrals %lf     %lf\n", QC, basic_int_2);
+    if(ang_coord_a == 1 && ang_coord_b == 0){
+        // printf("Basic solution with a=1 b=0\n");
+        // printf("%lf     %lf\n", QC, basic_int_2);
+        printf("%lft^2\n", Tsquared_coef);
+        return QC + basic_int_2;
+    }
+    //recurrence index
+    if(ang_coord_a > 1 && ang_coord_b == 0 ){
+        // printf("recurrence\n");
+        // printf("n(%d,%d) needs extra little n'\n", ang_coord_a, ang_coord_b);
+        double a_down = alt_little_n(ang_coord_a-1, 0, alpha, beta, center_a_coord, center_b_coord, t, nuc_coord);
+        double a_down2 = alt_little_n(ang_coord_a-2, 0, alpha, beta, center_a_coord, center_b_coord, t, nuc_coord);
+        // printf("n(%d,%d) little n's %lf %lf\n",ang_coord_a, ang_coord_b, a_down, a_down2);
+        return QC + basic_int_2 * a_down + ((ang_coord_a - 1)/(2 * p)) * (1 - pow(t, 2)) * a_down2;
+    }
+    //transfer equation. Fallback if other options not hit.
+    if (ang_coord_a >= 0 || ang_coord_b >= 1){
+        // printf("transfer\n");
+        // printf("n(%d,%d) needs extra little n'\n", ang_coord_a, ang_coord_b);
+        double aup_bdown = alt_little_n(ang_coord_a+1, ang_coord_b-1, alpha, beta, center_a_coord, center_b_coord, t, nuc_coord);
+        double b_down = alt_little_n(ang_coord_a, ang_coord_b-1, alpha, beta, center_a_coord, center_b_coord, t, nuc_coord);
         // printf("n(%d,%d) little n's %lf %lf\n", ang_coord_a, ang_coord_b, aup_bdown, b_down);
         return aup_bdown + (center_a_coord - center_b_coord) * b_down;  
     }
@@ -562,12 +620,6 @@ double little_n(int ang_coord_a, int ang_coord_b, double alpha, double beta, dou
 
 // double boys_func(double n, double T){
 //     return hyp1f1_clone(n+0.5, n+1.5, -T) / (2*n + 1);
-// }
-
-// double R(int t, int u, int v, double n, double p, struct Orbital orbital_a, struct Orbital orbital_b, double nuc_coords[num_dimensions]){
-//     // from goings' tutorial. Return coulomb auxiliary integrals (little_n() refactored).
-//     double p = alpha + beta;
-//     double T = p * 
 // }
 
 double boys_func(double x, int exp_a, int exp_b, struct Orbital orbital_a, struct Orbital orbital_b, double nuc_coords[num_dimensions]){
