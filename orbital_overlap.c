@@ -6,6 +6,7 @@
 #define BS_Size 7
 #define Num_Orbitals 9
 #define num_dimensions 3
+#define EPS 10E-10 
 
 //store orbital info
 struct Orbital {
@@ -35,6 +36,7 @@ double omega(int n, int i);
 double little_n(int ang_coord_a, int ang_coord_b, double alpha, double beta, double center_a_coord, double center_b_coord, double t, double nuc_coord);
 double chebychev_integral_boys(int exp_a, int exp_b, struct Orbital orbital_a, struct Orbital orbital_b, double nuc_coords[num_dimensions]);
 double N_e_attraction(int exp_a, int exp_b, struct Orbital orbital_a, struct Orbital orbital_b, double nuc_coords[num_dimensions]);
+double hyp1f1_clone(double a, double b, double x);
 
 int main(){
     //get info from files.
@@ -488,52 +490,53 @@ void Calc_BS_KE_Matrix(struct Orbital orbital_array[Num_Orbitals], double KE_mat
 
 //nuclear attraction integrals can be rewritten as overlap integrals with ugly terms. We can still exploit this.
 //We will need to solve the Boys integral. Guidence by Minhuey Ho's tutorial.
+//NE = Eab * 2pi/p * INT_0,1((Px-t^2(Px-Rx))* exp(-Rt^2))dt
 double abscissa(int n, int i){
     double i_pi = M_PI * i;
     double n_up = n + 1;
-    return (n_up -2 * i)/n_up + (2/M_PI) * (1 + (2/3) * pow(sin(i_pi/n_up), 2)) * cos(i_pi / n_up) * sin(i_pi / n_up);
+    return (n_up - 2*i)/n_up + (2/M_PI) * (1 + (2/3) * pow(sin(i_pi/n_up), 2.0)) * cos(i_pi / n_up) * sin(i_pi / n_up);
 }
 
 double omega(int n, int i){
     double n_up = n + 1;
-    return 16/3/n_up * pow(sin(M_PI * i / n_up), 4);
+    return 16/(3*n_up) * pow(sin(M_PI*i / n_up), 4.0);
 }
 
 double little_n(int ang_coord_a, int ang_coord_b, double alpha, double beta, double center_a_coord, double center_b_coord, double t, double nuc_coord){
     //nuc-elec interaction of two gaussian primitives
     //initial conditions
-    printf("n(%d,%d)\n", ang_coord_a, ang_coord_b);
+    // printf("n(%d,%d)\n", ang_coord_a, ang_coord_b);
     // printf("params n(%d,%d), a=%lf, b=%lf, A=%lf, B=%lf, t=%lf, RR=%lf\n", ang_coord_a, ang_coord_b, alpha, beta, center_a_coord, center_b_coord, t, nuc_coord);
     if(ang_coord_a == 0 && ang_coord_b == 0){
-        printf("n(0,0) = 1\n");
+        // printf("n(0,0) = 1\n");
         return 1;
     }
     double sum_ab = alpha + beta;
     double aA_bB = alpha * center_a_coord + beta * center_b_coord;
     double basic_int_1 = -(center_a_coord - (aA_bB / sum_ab));
     double basic_int_2 = pow(t, 2) * (aA_bB/sum_ab - nuc_coord);
-    printf("basic integrals %lf     %lf\n", basic_int_1, basic_int_2);
+    // printf("basic integrals %lf     %lf\n", basic_int_1, basic_int_2);
     if(ang_coord_a == 1 && ang_coord_b == 0){
-        printf("Basic solution with a=1 b=0\n");
+        // printf("Basic solution with a=1 b=0\n");
         // printf("%lf     %lf\n", basic_int_1, basic_int_2);
         return basic_int_1 + basic_int_2;
     }
     //recurrence index
     if(ang_coord_a > 1 && ang_coord_b == 0 ){
-        printf("recurrence\n");
-        printf("n(%d,%d) needs extra little n'\n", ang_coord_a, ang_coord_b);
+        // printf("recurrence\n");
+        // printf("n(%d,%d) needs extra little n'\n", ang_coord_a, ang_coord_b);
         double a_down = little_n(ang_coord_a-1, 0, alpha, beta, center_a_coord, center_b_coord, t, nuc_coord);
         double a_down2 = little_n(ang_coord_a-2, 0, alpha, beta, center_a_coord, center_b_coord, t, nuc_coord);
-        printf("n(%d,%d) little n's %lf %lf\n",ang_coord_a, ang_coord_b, a_down, a_down2);
+        // printf("n(%d,%d) little n's %lf %lf\n",ang_coord_a, ang_coord_b, a_down, a_down2);
         return basic_int_1 + basic_int_2 * a_down + ((ang_coord_a - 1)/(2 * sum_ab)) * (1 - pow(t, 2)) * a_down2;
     }
     //transfer equation. Fallback if other options not hit.
     if (ang_coord_a >= 0 || ang_coord_b >= 0){
-        printf("transfer\n");
-        printf("n(%d,%d) needs extra little n'\n", ang_coord_a, ang_coord_b);
+        // printf("transfer\n");
+        // printf("n(%d,%d) needs extra little n'\n", ang_coord_a, ang_coord_b);
         double aup_bdown = little_n(ang_coord_a+1, ang_coord_b-1, alpha, beta, center_a_coord, center_b_coord, t, nuc_coord);
         double b_down = little_n(ang_coord_a, ang_coord_b-1, alpha, beta, center_a_coord, center_b_coord, t, nuc_coord);
-        printf("n(%d,%d) little n's %lf %lf\n", ang_coord_a, ang_coord_b, aup_bdown, b_down);
+        // printf("n(%d,%d) little n's %lf %lf\n", ang_coord_a, ang_coord_b, aup_bdown, b_down);
         return aup_bdown + (center_a_coord - center_b_coord) * b_down;  
     }
     // in case of bad inputs.
@@ -544,34 +547,58 @@ double little_n(int ang_coord_a, int ang_coord_b, double alpha, double beta, dou
     }
 }
 
+// double hyp1f1_clone(double a, double b, double x){
+//     double term = 1.0;
+//     double result = 1.0;
+//     int k = 0;
+//     while (fabs(term) > EPS * fabs(result)){
+//         //since each term is almost what is needed for the next, why recalculate all from scratch?
+//         term *= (a+k) * x / (b+k) / (k+1); //extending the pochhammer and factorial parts of the kth term. 
+//         result += term; //continue the sum
+//         k++;
+//     }
+//     return result;
+// }
+
+// double boys_func(double n, double T){
+//     return hyp1f1_clone(n+0.5, n+1.5, -T) / (2*n + 1);
+// }
+
+// double R(int t, int u, int v, double n, double p, struct Orbital orbital_a, struct Orbital orbital_b, double nuc_coords[num_dimensions]){
+//     // from goings' tutorial. Return coulomb auxiliary integrals (little_n() refactored).
+//     double p = alpha + beta;
+//     double T = p * 
+// }
+
 double boys_func(double x, int exp_a, int exp_b, struct Orbital orbital_a, struct Orbital orbital_b, double nuc_coords[num_dimensions]){
     double alpha = orbital_a.expC[exp_a];
     double beta = orbital_b.expC[exp_b];
-    double sum_ab = alpha + beta;
+    double p = alpha + beta;
     double t = (x+1)/2;
 
     double dummy_a[num_dimensions], dummy_b[num_dimensions], aA_bB[num_dimensions];
     for (int i = 0; i < num_dimensions; i++){
-        dummy_a[i] = orbital_a.center[i];
-        dummy_b[i] = orbital_b.center[i];
+        dummy_a[i] = orbital_a.center[i]; //A
+        dummy_b[i] = orbital_b.center[i]; //B
     }
 
     scalar_mult(dummy_a, alpha); // aA
     scalar_mult(dummy_b, beta); // bB
 
     for(int i = 0; i < num_dimensions; i++){
-        aA_bB[i] = dummy_a[i] + dummy_b[i]; //vector addition
+        aA_bB[i] = dummy_a[i] + dummy_b[i]; //vector addition --> aA+bB
     }
-    scalar_mult(aA_bB, 1/sum_ab); //scale the vector
+    scalar_mult(aA_bB, 1/p); //scale the vector aA_bB is now P.
     
     double product = 1;
     for(int i = 0; i < num_dimensions; i++){
-        aA_bB[i] = aA_bB[i] - nuc_coords[i]; //vector subtraction.
+        aA_bB[i] = aA_bB[i] - nuc_coords[i]; //vector subtraction. --> PN(vector)
+        //unrelated calculation which is the product of the auxiliary integrals.
         product *= little_n(orbital_a.angular_momentum_vector[i], orbital_b.angular_momentum_vector[i], alpha, beta, orbital_a.center[i], orbital_b.center[i], t, nuc_coords[i]);
     }
 
-    double big_const = dist_squared(aA_bB, aA_bB); //((alpha * A_coords + beta * B_coords) / (sum_ab)) - nuc_coord dotted into itself (i.e. dist squared.)
-    double simple_part = 0.5 * exp(-(sum_ab * pow(t, 2) * big_const));
+    double dist_PN = dist_squared(aA_bB, aA_bB); //((alpha * A_coords + beta * B_coords) / p) - nuc_coord dotted into itself (i.e. dist squared.)
+    double simple_part = 0.5 * exp(-(p * pow(t, 2.0) * dist_PN));
 
     return simple_part * product;
 }
@@ -579,38 +606,37 @@ double boys_func(double x, int exp_a, int exp_b, struct Orbital orbital_a, struc
 double chebychev_integral_boys(int exp_a, int exp_b, struct Orbital orbital_a, struct Orbital orbital_b, double nuc_coords[num_dimensions]){ //ideally pass boys function as arg but we only need to solve this integral so it is just baked into the function.
     //Minhuey's paper uses https://doi.org/10.1016/0010-4655(93)90035-B as a guide.
     //set some parameters
-    double tolerance = pow(10, -10);
     int num_points = 50000;
     double c0 = cos(M_PI/6);
-    double s0 = cos(M_PI/6);
+    double s0 = sin(M_PI/6);
     double c1, s1, q, p, chp, j, c, s, xp;
-    float err = 10;
+    double err = 10.0;
     int n = 3;
 
     double bf_a_plus = boys_func(abscissa(2,1), exp_a, exp_b, orbital_a, orbital_b, nuc_coords);
     double bf_a_minus = boys_func(-abscissa(2,1), exp_a, exp_b, orbital_a, orbital_b, nuc_coords);
     
-    q = bf_a_plus * bf_a_minus * omega(2,1);
+    q = (bf_a_plus + bf_a_minus) * omega(2,1);
     p = boys_func(0.0, exp_a, exp_b, orbital_a, orbital_b, nuc_coords);
 
     chp = p + q; //value of integral
     j = 0; //oscilates between 0 and 1.
     c1 = s0;
     s1 = c0;
-    while(tolerance < err && (2* n * (1 - j) + j * 4 * n / 3 - 1) <= num_points){
+    while(EPS < err && (2*n * (1-j) + j*4*n/3 - 1) <= num_points){
         j = 1 - j;
         c1 = j * c1 + (1 - j) * c0;
         s1 = j * s1 + (1 - j) * s0;
         c0 = j * c0 + (1 - j) * sqrt((1 + c0) * 0.5);
-        s0 = j * s0 + (1 - j) * s0 / (c0 + c0);
+        s0 = j * s0 + (1 - j) * s0 / 2 / c0;
         c = c0;
         s = s0;
         for(int i = 1; i < n; i += 2){
             xp = 1 + 2/(3 * M_PI) * s * c * (3 + 2 * s * s) - i/n;
-            if(ceil(3 * (i + j + j) / 3) > 1 + j){
-                chp += boys_func(-xp, exp_a, exp_b, orbital_a, orbital_b, nuc_coords)
-                        + boys_func(xp, exp_a, exp_b, orbital_a, orbital_b, nuc_coords)
-                        * pow(s, 4);
+            if(ceil(i + j) > 1){
+                chp += (boys_func(-xp, exp_a, exp_b, orbital_a, orbital_b, nuc_coords)
+                        + boys_func(xp, exp_a, exp_b, orbital_a, orbital_b, nuc_coords))
+                        * pow(s, 4.0);
             }
             xp = s;
             s = s * c1 + c * s1;
@@ -618,10 +644,10 @@ double chebychev_integral_boys(int exp_a, int exp_b, struct Orbital orbital_a, s
         }
         n = (1 + j) * n;
         p = p + (1 - j) * (chp - q);
-        err = 16 * fabs((1 - j) * (q - 3*p/2) + j * (chp -2*q)) / (3*n); //error estimates
+        err = 16 * fabs((1 - j) * (q - 3*p/2) + j*(chp - 2*q)) / (3*n); //error estimates
         q = (1 - j)*q + j*chp;
-        // printf("tolerance < err && expression <= numpoints\n");
-        printf("%lf   %lf   %lf         %d\n", tolerance, err, (2* n * (1 - j) + j * 4 * n / 3 - 1), num_points);
+        // printf("EPS < err && expression <= numpoints\n");
+        // printf("%lf   %lf   %lf         %d\n", EPS, err, (2* n * (1 - j) + j * 4 * n / 3 - 1), num_points);
         // printf("j = %lf, p = %lf\n", j, p);
         // printf("q = %lf, n = %lf\n", q, n);
     }
