@@ -128,3 +128,43 @@
 
 (* ::Input:: *)
 (*Func[OrbCoeff[[1,1]],OrbCoeff[[7,1]],R[[1]],R[[3]],R[[1]],CartAng[[1]],CartAng[[7]]]*)
+
+
+(* ::Input:: *)
+(*-.48647-.714831*)
+
+
+(* ::Input:: *)
+(*CForm[*)
+(*-(RA-((alpha*RA+beta*RB)/*)
+(*(alpha+beta))+*)
+(*(t^2)**)
+(*(((alpha*RA+beta*RB)/(alpha+beta))-*)
+(*RR))*)
+(*]*)
+(**)
+
+
+(* ::Input:: *)
+(*CForm[*)
+(*-(RA-((alpha*RA+beta*RB)/*)
+(*(alpha+beta))+*)
+(*(t^2)**)
+(*(((alpha*RA+beta*RB)/(alpha+beta))-RR))*adb0+((a-1)/(2*(alpha+beta)))*(1-t^2)*ad2b0*)
+(*]*)
+(**)
+
+
+(* ::Input:: *)
+(*-(RA-((alpha*RA+beta*RB)/*)
+(*(alpha+beta))+*)
+(*(t^2)**)
+(*(((alpha*RA+beta*RB)/(alpha+beta))-RR))*adb0+((a-1)/(2*(alpha+beta)))*(1-t^2)*ad2b0*)
+
+
+(* ::Input:: *)
+(*adb0 (-RA+(alpha RA+beta RB)/(alpha+beta)-((alpha RA+beta RB)/(alpha+beta)-RR) t^2)*)
+
+
+(* ::Input:: *)
+(*Simplify[adb0 (-RA+Q-(Q-RR) t^2)]*)

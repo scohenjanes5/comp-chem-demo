@@ -1,4 +1,4 @@
-In[10]:= abscissa[n_,i_]:=(n+1-2*i)/(n+1)+(2/ Pi)*(1+(2/3) Sin[i Pi / (n+1)]^2) Cos[i Pi/(n+1)]*
+In[35]:= abscissa[n_,i_]:=(n+1-2*i)/(n+1)+(2/ Pi)*(1+(2/3) Sin[i Pi / (n+1)]^2) Cos[i Pi/(n+1)]*
 Sin[i Pi/(n+1)];
 
 omega[n_,i_]:=(16 /(3 (n+1))) Sin[i Pi/(n+1)]^4;
@@ -92,7 +92,7 @@ z={1,1,8};
 
 
 
-Out[14]= {{0.,1.43234,-0.96104},{0.,-1.43234,-0.96104},{0.,0.,0.24026}}
+Out[39]= {{0.,1.43234,-0.96104},{0.,-1.43234,-0.96104},{0.,0.,0.24026}}
 In[20]:= Nea[OrbCoeff[[1,1]],OrbCoeff[[7,1]],R[[1]],R[[3]],R[[1]],CartAng[[1]],CartAng[[7]]]
 During evaluation of In[20]:= General::munfl: Exp[-801.578] is too small to represent as a normalized machine number; precision may be lost.
 During evaluation of In[20]:= General::munfl: Exp[-5192.73] is too small to represent as a normalized machine number; precision may be lost.
@@ -103,7 +103,7 @@ During evaluation of In[20]:= General::unfl: Underflow occurred in computation.
 During evaluation of In[20]:= General::unfl: Underflow occurred in computation.
 During evaluation of In[20]:= General::stop: Further output of General::unfl will be suppressed during this calculation.
 Out[20]= -8.91214*10^-7
-In[32]:= Func[alpha_,beta_,RA_,RB_,RR_,LA_,LB_]:= Module[
+In[47]:= Func[alpha_,beta_,RA_,RB_,RR_,LA_,LB_]:= Module[
 {eta,EAB},
 Do[ 
 (*intial conditions for eta*)
@@ -125,5 +125,36 @@ eta[i_,a_,0]:=
 eta[i_,a_,b_]:=eta[i,a+1,b-1]+(RA[[i]]-RB[[i]])*eta[i,a,b-1];,
 {i,1,3}];
 eta[1,LA[[1]],LB[[1]]]*eta[2,LA[[2]],LB[[2]]]*eta[3,LA[[3]],LB[[3]]]];
-In[33]:= Func[OrbCoeff[[1,1]],OrbCoeff[[7,1]],R[[1]],R[[3]],R[[1]],CartAng[[1]],CartAng[[7]]]
-Out[33]= -0.48647-0.714831 t^2
+In[48]:= Func[OrbCoeff[[1,1]],OrbCoeff[[7,1]],R[[1]],R[[3]],R[[1]],CartAng[[1]],CartAng[[7]]]
+Out[48]= -0.48647-0.714831 t^2
+In[1]:= -.48647-.714831
+Out[1]= -1.2013
+In[24]:= CForm[
+-(RA-((alpha*RA+beta*RB)/
+(alpha+beta))+
+(t^2)*
+(((alpha*RA+beta*RB)/(alpha+beta))-
+RR))
+]
+
+Out[24]//CForm=
+-RA + (alpha*RA + beta*RB)/(alpha + beta) - ((alpha*RA + beta*RB)/(alpha + beta) - RR)*Power(t,2)
+In[56]:= CForm[
+-(RA-((alpha*RA+beta*RB)/
+(alpha+beta))+
+(t^2)*
+(((alpha*RA+beta*RB)/(alpha+beta))-RR))*adb0+((a-1)/(2*(alpha+beta)))*(1-t^2)*ad2b0
+]
+
+Out[56]//CForm=
+((-1 + a)*ad2b0*(1 - Power(t,2)))/(2.*(alpha + beta)) + adb0*
+    (-RA + (alpha*RA + beta*RB)/(alpha + beta) - ((alpha*RA + beta*RB)/(alpha + beta) - RR)*Power(t,2))
+In[50]:= -(RA-((alpha*RA+beta*RB)/
+(alpha+beta))+
+(t^2)*
+(((alpha*RA+beta*RB)/(alpha+beta))-RR))*adb0+((a-1)/(2*(alpha+beta)))*(1-t^2)*ad2b0
+Out[50]= ((-1+a) ad2b0 (1-t^2))/(2 (alpha+beta))+adb0 (-RA+(alpha RA+beta RB)/(alpha+beta)-((alpha RA+beta RB)/(alpha+beta)-RR) t^2)
+In[53]:= adb0 (-RA+(alpha RA+beta RB)/(alpha+beta)-((alpha RA+beta RB)/(alpha+beta)-RR) t^2)
+Out[53]= adb0 (-RA+(alpha RA+beta RB)/(alpha+beta)-((alpha RA+beta RB)/(alpha+beta)-RR) t^2)
+In[55]:= Simplify[adb0 (-RA+Q-(Q-RR) t^2)]
+Out[55]= adb0 (Q-RA-Q t^2+RR t^2)
