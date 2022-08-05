@@ -99,7 +99,7 @@ int main(){
 
     printf("----------------------\n");
 
-    results = little_n(1, 0, orbital_a.expC[0], orbital_b.expC[0], orbital_a.center[2], orbital_b.center[2], 1, orbital_a.center[2]); + (orbital_a.center[2] - orbital_b.center[2]);
+    results = little_n(1, 0, orbital_a.expC[0], orbital_b.expC[0], orbital_a.center[2], orbital_b.center[2], 1, orbital_a.center[2]) + (orbital_a.center[2] - orbital_b.center[2]);
 
     // results = N_e_attraction(0,0, orbital_a, orbital_b, orbital_a.center);
     printf("Results: %lf\n", results);
@@ -519,7 +519,8 @@ double little_n(int ang_coord_a, int ang_coord_b, double alpha, double beta, dou
     if(ang_coord_a == 1 && ang_coord_b == 0){
         // printf("Basic solution with a=1 b=0\n");
         // printf("%lf     %lf\n", basic_int_1, basic_int_2);
-        return basic_int_1 + basic_int_2;
+        return -center_a_coord + (alpha * center_a_coord + beta * center_b_coord)/sum_ab - 
+                ((alpha * center_a_coord + beta * center_b_coord)/sum_ab - nuc_coord) * pow(t,2);
     }
     //recurrence index
     if(ang_coord_a > 1 && ang_coord_b == 0 ){
@@ -528,7 +529,9 @@ double little_n(int ang_coord_a, int ang_coord_b, double alpha, double beta, dou
         double a_down = little_n(ang_coord_a-1, 0, alpha, beta, center_a_coord, center_b_coord, t, nuc_coord);
         double a_down2 = little_n(ang_coord_a-2, 0, alpha, beta, center_a_coord, center_b_coord, t, nuc_coord);
         // printf("n(%d,%d) little n's %lf %lf\n",ang_coord_a, ang_coord_b, a_down, a_down2);
-        return basic_int_1 + basic_int_2 * a_down + ((ang_coord_a - 1)/(2 * sum_ab)) * (1 - pow(t, 2)) * a_down2;
+        return ((ang_coord_a-1) * a_down2 * (1-pow(t,2))) / (2*(sum_ab)) + 
+            a_down * (-center_a_coord + (alpha*center_a_coord + beta*center_b_coord)/sum_ab - ((alpha*center_a_coord + beta*center_b_coord)/sum_ab) - nuc_coord) 
+            * pow(t,2);
     }
     //transfer equation. Fallback if other options not hit.
     if (ang_coord_a >= 0 || ang_coord_b >= 1){
