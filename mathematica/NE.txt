@@ -1,0 +1,129 @@
+In[10]:= abscissa[n_,i_]:=(n+1-2*i)/(n+1)+(2/ Pi)*(1+(2/3) Sin[i Pi / (n+1)]^2) Cos[i Pi/(n+1)]*
+Sin[i Pi/(n+1)];
+
+omega[n_,i_]:=(16 /(3 (n+1))) Sin[i Pi/(n+1)]^4;
+
+IntChebyshev[eps_,M_,F_]:=Module[{c0=Cos[Pi/6.],s0=Sin[Pi/6.],c1,s1,q,p,chp,j,c,s,xp,err=10.,n=3},
+c1=s0;
+s1=c0;
+q=((F/.x->abscissa[2,1])+(F/.x->-abscissa[2,1]))*
+omega[2,1];
+p=F/.x->0.0;
+chp=q+p;
+j=0;
+While[
+(err>eps)&&((2n(1-j)+j*4*n/3-1)<=M),
+
+j=1-j;
+c1=j*c1+(1-j)*c0;
+s1=j*s1+(1-j)*Sqrt[(1+c0)*0.5];
+s0=j*s0+(1-j)*s0/(c0+c0);
+c=c0;
+s=s0;
+Do[
+xp=1+2/(3*Pi)*s*c*(3+2*s*s)-i/n;
+If[
+Ceiling[(3*(i+j+j)/3)]>i+j,
+chp=chp+(((F/.x->-xp)+(F/.x->xp))*s^4)
+];(*end of if*)
+xp=s;
+s=s*c1+c*s1;
+c=c*c1-xp*s1,
+{i,1,n-1,2}
+];(*end do*)
+n=(1+j)*n;
+p=p+(1-j)*(chp-q);
+err=16*Abs[(1-j)*(q-3*p/2)+j*(chp-2*q)]/(3n);
+q=(1-j)*q+j*chp
+]; (*end while*)
+SetPrecision[16*q/(3n),16]
+]
+
+Nea[alpha_,beta_,RA_,RB_,RR_,LA_,LB_]:= Module[
+{eta,EAB},
+Do[ 
+(*intial conditions for eta*)
+
+eta[i_,0,0]:=1;
+eta[i_,1,0]:=
+-(RA[[i]]-((alpha*RA[[i]]+beta*RB[[i]])/
+(alpha+beta))+
+(t^2)*
+(((alpha*RA[[i]]+beta*RB[[i]])/(alpha+beta))-
+RR[[i]]));
+(*recurrence*)
+eta[i_,a_,0]:=
+-(RA[[i]]-((alpha*RA[[i]]+beta*RB[[i]])/
+(alpha+beta))+
+(t^2)*
+(((alpha*RA[[i]]+beta*RB[[i]])/(alpha+beta))-RR[[i]]))*eta[i,a-1,0]+((a-1)/(2*(alpha+beta)))*(1-t^2)*eta[i,a-2,0];
+(*xfer*)
+eta[i_,a_,b_]:=eta[i,a+1,b-1]+(RA[[i]]-RB[[i]])*eta[i,a,b-1];,
+{i,1,3}];
+(*Exponential Overlap*)
+EAB=Exp[-(alpha*beta/(alpha+beta))*
+(RA-RB).(RA-RB)];
+(*N-e Attraction Energy Integral*)
+EAB*(2*Pi/(alpha+beta))*
+(*method from the paper*)
+(IntChebyshev[10^-10,50000,1/2*
+(Exp[-((alpha+beta)*(t^2)*
+((((alpha*RA+beta*RB)/(alpha+beta))-RR).
+(((alpha*RA+beta*RB)/(alpha+beta))-RR)))]
+*eta[1,LA[[1]],LB[[1]]]*eta[2,LA[[2]],LB[[2]]]*eta[3,LA[[3]],LB[[3]]]/.t->(x+1)/2)])];
+R={
+{0.,1.43233673,-0.9610403},
+{0.,-1.43233673,-0.96104039},
+{0.,0.,0.24026010}
+}
+
+PrimCoeff={
+{0.1543289673,0.5353281423,0.4446345422},{0.1543289673,0.5353281423,0.4446345422},{0.1543289673,0.5353281423,0.4446345422},{-0.09996722919,0.3995128261,0.7001154689},{0.155916275,0.6076837186,0.3919573931},{0.155916275,0.6076837186,0.3919573931},{0.155916275,0.6076837186,0.3919573931}
+};
+
+OrbCoeff={
+{3.425250914,0.6239137298,0.168855404},{3.425250914,0.6239137298,0.168855404},{130.7093214,23.80886605,6.443608313},
+{5.033151319,1.169596125,0.38038896},{5.033151319,1.169596125,0.38038896},{5.033151319,1.169596125,0.38038896},{5.033151319,1.169596125,0.38038896}
+};
+FCenter={R[[1]],R[[2]],R[[3]],R[[3]],R[[3]],R[[3]],R[[3]]};
+CartAng={{0,0,0},{0,0,0},{0,0,0},{0,0,0},{1,0,0},{0,1,0},{0,0,1}};
+z={1,1,8};
+
+
+
+
+Out[14]= {{0.,1.43234,-0.96104},{0.,-1.43234,-0.96104},{0.,0.,0.24026}}
+In[20]:= Nea[OrbCoeff[[1,1]],OrbCoeff[[7,1]],R[[1]],R[[3]],R[[1]],CartAng[[1]],CartAng[[7]]]
+During evaluation of In[20]:= General::munfl: Exp[-801.578] is too small to represent as a normalized machine number; precision may be lost.
+During evaluation of In[20]:= General::munfl: Exp[-5192.73] is too small to represent as a normalized machine number; precision may be lost.
+During evaluation of In[20]:= General::munfl: Exp[-4736.94] is too small to represent as a normalized machine number; precision may be lost.
+During evaluation of In[20]:= General::stop: Further output of General::munfl will be suppressed during this calculation.
+During evaluation of In[20]:= General::unfl: Underflow occurred in computation.
+During evaluation of In[20]:= General::unfl: Underflow occurred in computation.
+During evaluation of In[20]:= General::unfl: Underflow occurred in computation.
+During evaluation of In[20]:= General::stop: Further output of General::unfl will be suppressed during this calculation.
+Out[20]= -8.91214*10^-7
+In[32]:= Func[alpha_,beta_,RA_,RB_,RR_,LA_,LB_]:= Module[
+{eta,EAB},
+Do[ 
+(*intial conditions for eta*)
+
+eta[i_,0,0]:=1;
+eta[i_,1,0]:=
+-(RA[[i]]-((alpha*RA[[i]]+beta*RB[[i]])/
+(alpha+beta))+
+(t^2)*
+(((alpha*RA[[i]]+beta*RB[[i]])/(alpha+beta))-
+RR[[i]]));
+(*recurrence*)
+eta[i_,a_,0]:=
+-(RA[[i]]-((alpha*RA[[i]]+beta*RB[[i]])/
+(alpha+beta))+
+(t^2)*
+(((alpha*RA[[i]]+beta*RB[[i]])/(alpha+beta))-RR[[i]]))*eta[i,a-1,0]+((a-1)/(2*(alpha+beta)))*(1-t^2)*eta[i,a-2,0];
+(*xfer*)
+eta[i_,a_,b_]:=eta[i,a+1,b-1]+(RA[[i]]-RB[[i]])*eta[i,a,b-1];,
+{i,1,3}];
+eta[1,LA[[1]],LB[[1]]]*eta[2,LA[[2]],LB[[2]]]*eta[3,LA[[3]],LB[[3]]]];
+In[33]:= Func[OrbCoeff[[1,1]],OrbCoeff[[7,1]],R[[1]],R[[3]],R[[1]],CartAng[[1]],CartAng[[7]]]
+Out[33]= -0.48647-0.714831 t^2
