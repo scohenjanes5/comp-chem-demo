@@ -21,6 +21,7 @@ void calc_norm_const(struct Orbital orbital_array[Num_Orbitals]);
 double get_norm_denominator(int angular_momentum_vector[num_dimensions]);
 int fact2(int n);
 double dist_squared(double coords_A[num_dimensions], double coords_B[num_dimensions]);
+double dot_product(double coords_A[num_dimensions], double coords_B[num_dimensions]);
 void scalar_mult(double *coords_pt, double scalar);
 double primitive_overlap(int dim_a, int dim_b, struct Orbital orbital_a, struct Orbital orbital_b);
 double little_s(int ang_coord_a, int ang_coord_b, double alpha, double beta, double center_a_coord, double center_b_coord);
@@ -101,9 +102,11 @@ int main(){
 
     // results = little_n(1, 0, orbital_a.expC[0], orbital_b.expC[0], orbital_a.center[2], orbital_b.center[2], 1, orbital_a.center[2]) + (orbital_a.center[2] - orbital_b.center[2]);
 
-    results = N_e_attraction(0,0, orbital_a, orbital_b, orbital_a.center);
-    // results = pow((abscissa(2,1)+1)/2,2);
+    // results = N_e_attraction(0,0, orbital_a, orbital_b, orbital_a.center);
+    // results = boys_func(0, 0, 0, orbital_a, orbital_b, orbital_a.center);
+    results=chebychev_integral_boys(0,0,orbital_a, orbital_b,orbital_a.center);
     printf("Results: %lf\n", results);
+
 
     return 0;
 }
@@ -232,6 +235,14 @@ double dist_squared(double coords_A[num_dimensions], double coords_B[num_dimensi
         dist_squared += pow(coords_A[i] - coords_B[i], 2);
     }
     return dist_squared;
+}
+
+double dot_product(double coords_A[num_dimensions], double coords_B[num_dimensions]){
+    double DP = 0;
+    for (int i = 0; i < num_dimensions; i++){
+        DP += coords_A[i]*coords_B[i];
+    }
+    return DP;
 }
 
 void scalar_mult(double *coords_pt, double scalar){ //uses pointers to multiply vector by scalar.
@@ -588,17 +599,18 @@ double boys_func(double x, int exp_a, int exp_b, struct Orbital orbital_a, struc
     }
     scalar_mult(aA_bB, 1/p); //scale the vector aA_bB is now P.
     
-    double product = 1;
+    double result = 1;
     for(int i = 0; i < num_dimensions; i++){
         aA_bB[i] = aA_bB[i] - nuc_coords[i]; //vector subtraction. --> PN(vector)
         //unrelated calculation which is the product of the auxiliary integrals.
-        product *= little_n(orbital_a.angular_momentum_vector[i], orbital_b.angular_momentum_vector[i], alpha, beta, orbital_a.center[i], orbital_b.center[i], t, nuc_coords[i]);
+        result *= little_n(orbital_a.angular_momentum_vector[i], orbital_b.angular_momentum_vector[i], alpha, beta, orbital_a.center[i], orbital_b.center[i], t, nuc_coords[i]);
     }
 
-    double dist_PN = dist_squared(aA_bB, aA_bB); //((alpha * A_coords + beta * B_coords) / p) - nuc_coord dotted into itself (i.e. dist squared.)
-    double simple_part = 0.5 * exp(-(p * pow(t, 2.0) * dist_PN));
+    double dist_PN = dot_product(aA_bB, aA_bB); //((alpha * A_coords + beta * B_coords) / p) - nuc_coord dotted into itself (i.e. dist squared.)
+    result *= 0.5 * exp(-p * pow(t, 2.0) * dist_PN);
+    // printf("%lf\n",dist_PN);
 
-    return simple_part * product;
+    return result;
 }
 
 double chebychev_integral_boys(int exp_a, int exp_b, struct Orbital orbital_a, struct Orbital orbital_b, double nuc_coords[num_dimensions]){ //ideally pass boys function as arg but we only need to solve this integral so it is just baked into the function.
