@@ -94,14 +94,15 @@ int main(){
     // results = exp(-(orbital_a.expC[0] * orbital_b.expC[0])/(orbital_a.expC[0] + orbital_b.expC[0]) * dist_squared(orbital_a.center, orbital_b.center))
     //     * (2 * M_PI / (orbital_a.expC[0] + orbital_b.expC[0]));
     // results = little_n(0, 0, orbital_a.expC[0], orbital_b.expC[0], orbital_a.center[1], orbital_b.center[1], 0, orbital_a.center[1]);
-    results = little_n(0, 1, orbital_a.expC[0], orbital_b.expC[0], orbital_a.center[2], orbital_b.center[2], 1, orbital_a.center[2]);
-    printf("Results: %lf\n", results);
+    // results = little_n(0, 1, orbital_a.expC[0], orbital_b.expC[0], orbital_a.center[2], orbital_b.center[2], 1, orbital_a.center[2]);
+    // printf("Results: %lf\n", results);
 
-    printf("----------------------\n");
+    // printf("----------------------\n");
 
-    results = little_n(1, 0, orbital_a.expC[0], orbital_b.expC[0], orbital_a.center[2], orbital_b.center[2], 1, orbital_a.center[2]) + (orbital_a.center[2] - orbital_b.center[2]);
+    // results = little_n(1, 0, orbital_a.expC[0], orbital_b.expC[0], orbital_a.center[2], orbital_b.center[2], 1, orbital_a.center[2]) + (orbital_a.center[2] - orbital_b.center[2]);
 
-    // results = N_e_attraction(0,0, orbital_a, orbital_b, orbital_a.center);
+    results = N_e_attraction(0,0, orbital_a, orbital_b, orbital_a.center);
+    // results = pow((abscissa(2,1)+1)/2,2);
     printf("Results: %lf\n", results);
 
     return 0;
@@ -494,7 +495,9 @@ void Calc_BS_KE_Matrix(struct Orbital orbital_array[Num_Orbitals], double KE_mat
 double abscissa(int n, int i){
     double i_pi = M_PI * i;
     double n_up = n + 1;
-    return (n_up - 2*i)/n_up + (2/M_PI) * (1 + (2/3) * pow(sin(i_pi/n_up), 2.0)) * cos(i_pi / n_up) * sin(i_pi / n_up);
+    double trig_arg = 2 * i_pi/n_up;
+    // return (n_up - 2*i)/n_up + (2/M_PI) * (1 + (2/3) * pow(sin(i_pi/n_up), 2.0)) * cos(i_pi / n_up) * sin(i_pi / n_up);
+    return (1-2*i+n)/n_up + 4*sin(trig_arg)/(3*M_PI) - sin(2*trig_arg)/(6*M_PI);
 }
 
 double omega(int n, int i){
@@ -511,16 +514,15 @@ double little_n(int ang_coord_a, int ang_coord_b, double alpha, double beta, dou
         // printf("n(0,0) = 1\n");
         return 1;
     }
+    double tsqrd = t * t;
     double sum_ab = alpha + beta;
     double aA_bB = alpha * center_a_coord + beta * center_b_coord;
-    double basic_int_1 = -(center_a_coord - (aA_bB / sum_ab));
-    double basic_int_2 = pow(t, 2) * (aA_bB/sum_ab - nuc_coord);
     // printf("basic integrals %lf     %lf\n", basic_int_1, basic_int_2);
     if(ang_coord_a == 1 && ang_coord_b == 0){
         // printf("Basic solution with a=1 b=0\n");
         // printf("%lf     %lf\n", basic_int_1, basic_int_2);
-        return -center_a_coord + (alpha * center_a_coord + beta * center_b_coord)/sum_ab - 
-                ((alpha * center_a_coord + beta * center_b_coord)/sum_ab - nuc_coord) * pow(t,2);
+        return -center_a_coord + aA_bB/sum_ab - 
+                (aA_bB/sum_ab - nuc_coord) * tsqrd;
     }
     //recurrence index
     if(ang_coord_a > 1 && ang_coord_b == 0 ){
@@ -529,9 +531,8 @@ double little_n(int ang_coord_a, int ang_coord_b, double alpha, double beta, dou
         double a_down = little_n(ang_coord_a-1, 0, alpha, beta, center_a_coord, center_b_coord, t, nuc_coord);
         double a_down2 = little_n(ang_coord_a-2, 0, alpha, beta, center_a_coord, center_b_coord, t, nuc_coord);
         // printf("n(%d,%d) little n's %lf %lf\n",ang_coord_a, ang_coord_b, a_down, a_down2);
-        return ((ang_coord_a-1) * a_down2 * (1-pow(t,2))) / (2*(sum_ab)) + 
-            a_down * (-center_a_coord + (alpha*center_a_coord + beta*center_b_coord)/sum_ab - ((alpha*center_a_coord + beta*center_b_coord)/sum_ab) - nuc_coord) 
-            * pow(t,2);
+        return ((ang_coord_a-1) * a_down2 * (1-tsqrd)) / (2*(sum_ab)) + 
+            a_down * (-center_a_coord + aA_bB/sum_ab - (aA_bB/sum_ab - nuc_coord) * tsqrd);
     }
     //transfer equation. Fallback if other options not hit.
     if (ang_coord_a >= 0 || ang_coord_b >= 1){
