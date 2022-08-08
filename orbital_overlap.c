@@ -516,15 +516,15 @@ double little_n(int ang_coord_a, int ang_coord_b, double alpha, double beta, dou
         // printf("n(0,0) = 1\n");
         return 1;
     }
+    double tsqrd = t * t;
     double sum_ab = alpha + beta;
     double aA_bB = alpha * center_a_coord + beta * center_b_coord;
-    double basic_int_1 = -(center_a_coord - (aA_bB / sum_ab));
-    double basic_int_2 = pow(t, 2) * (aA_bB/sum_ab - nuc_coord);
     // printf("basic integrals %lf     %lf\n", basic_int_1, basic_int_2);
     if(ang_coord_a == 1 && ang_coord_b == 0){
         // printf("Basic solution with a=1 b=0\n");
         // printf("%lf     %lf\n", basic_int_1, basic_int_2);
-        return basic_int_1 + basic_int_2;
+        return -center_a_coord + aA_bB/sum_ab - 
+                (aA_bB/sum_ab - nuc_coord) * tsqrd;
     }
     //recurrence index
     if(ang_coord_a > 1 && ang_coord_b == 0 ){
@@ -533,7 +533,8 @@ double little_n(int ang_coord_a, int ang_coord_b, double alpha, double beta, dou
         double a_down = little_n(ang_coord_a-1, 0, alpha, beta, center_a_coord, center_b_coord, t, nuc_coord);
         double a_down2 = little_n(ang_coord_a-2, 0, alpha, beta, center_a_coord, center_b_coord, t, nuc_coord);
         // printf("n(%d,%d) little n's %lf %lf\n",ang_coord_a, ang_coord_b, a_down, a_down2);
-        return basic_int_1 + basic_int_2 * a_down + ((ang_coord_a - 1)/(2 * sum_ab)) * (1 - pow(t, 2)) * a_down2;
+        return ((ang_coord_a-1) * a_down2 * (1-tsqrd)) / (2*(sum_ab)) + 
+            a_down * (-center_a_coord + aA_bB/sum_ab - (aA_bB/sum_ab - nuc_coord) * tsqrd);
     }
     //transfer equation. Fallback if other options not hit.
     if (ang_coord_a >= 0 || ang_coord_b >= 1){
@@ -560,40 +561,35 @@ double alt_little_n(int ang_coord_a, int ang_coord_b, double alpha, double beta,
     // printf("n(%d,%d)\n", ang_coord_a, ang_coord_b);
     // printf("params n(%d,%d), a=%lf, b=%lf, A=%lf, B=%lf, t=%lf, RR=%lf\n", ang_coord_a, ang_coord_b, alpha, beta, center_a_coord, center_b_coord, t, nuc_coord);
     if(ang_coord_a == 0 && ang_coord_b == 0){
-        printf("%lft^2\n", Tsquared_coef);
         // printf("n(0,0) = 1\n");
-        t_0_coef = 1;
-        printf("%lft^2\n", t_0_coef);
         return 1;
     }
-    double p = alpha + beta;
+    double tsqrd = t * t;
+    double sum_ab = alpha + beta;
     double aA_bB = alpha * center_a_coord + beta * center_b_coord;
-    double QC = -(center_a_coord - (aA_bB / p));
-    Tsquared_coef = (aA_bB/p - nuc_coord);
-    double basic_int_2 = pow(t, 2) * Tsquared_coef;
-    
-    // printf("basic integrals %lf     %lf\n", QC, basic_int_2);
+    // printf("basic integrals %lf     %lf\n", basic_int_1, basic_int_2);
     if(ang_coord_a == 1 && ang_coord_b == 0){
         // printf("Basic solution with a=1 b=0\n");
-        // printf("%lf     %lf\n", QC, basic_int_2);
-        printf("%lft^2\n", Tsquared_coef);
-        return QC + basic_int_2;
+        // printf("%lf     %lf\n", basic_int_1, basic_int_2);
+        return -center_a_coord + aA_bB/sum_ab - 
+                (aA_bB/sum_ab - nuc_coord) * tsqrd;
     }
     //recurrence index
     if(ang_coord_a > 1 && ang_coord_b == 0 ){
         // printf("recurrence\n");
         // printf("n(%d,%d) needs extra little n'\n", ang_coord_a, ang_coord_b);
-        double a_down = alt_little_n(ang_coord_a-1, 0, alpha, beta, center_a_coord, center_b_coord, t, nuc_coord);
-        double a_down2 = alt_little_n(ang_coord_a-2, 0, alpha, beta, center_a_coord, center_b_coord, t, nuc_coord);
+        double a_down = little_n(ang_coord_a-1, 0, alpha, beta, center_a_coord, center_b_coord, t, nuc_coord);
+        double a_down2 = little_n(ang_coord_a-2, 0, alpha, beta, center_a_coord, center_b_coord, t, nuc_coord);
         // printf("n(%d,%d) little n's %lf %lf\n",ang_coord_a, ang_coord_b, a_down, a_down2);
-        return QC + basic_int_2 * a_down + ((ang_coord_a - 1)/(2 * p)) * (1 - pow(t, 2)) * a_down2;
+        return ((ang_coord_a-1) * a_down2 * (1-tsqrd)) / (2*(sum_ab)) + 
+            a_down * (-center_a_coord + aA_bB/sum_ab - (aA_bB/sum_ab - nuc_coord) * tsqrd);
     }
     //transfer equation. Fallback if other options not hit.
     if (ang_coord_a >= 0 || ang_coord_b >= 1){
         // printf("transfer\n");
         // printf("n(%d,%d) needs extra little n'\n", ang_coord_a, ang_coord_b);
-        double aup_bdown = alt_little_n(ang_coord_a+1, ang_coord_b-1, alpha, beta, center_a_coord, center_b_coord, t, nuc_coord);
-        double b_down = alt_little_n(ang_coord_a, ang_coord_b-1, alpha, beta, center_a_coord, center_b_coord, t, nuc_coord);
+        double aup_bdown = little_n(ang_coord_a+1, ang_coord_b-1, alpha, beta, center_a_coord, center_b_coord, t, nuc_coord);
+        double b_down = little_n(ang_coord_a, ang_coord_b-1, alpha, beta, center_a_coord, center_b_coord, t, nuc_coord);
         // printf("n(%d,%d) little n's %lf %lf\n", ang_coord_a, ang_coord_b, aup_bdown, b_down);
         return aup_bdown + (center_a_coord - center_b_coord) * b_down;  
     }
