@@ -35,9 +35,12 @@ double abscissa(int n, int i);
 double boys_func(double x, int exp_a, int exp_b, struct Orbital orbital_a, struct Orbital orbital_b, double nuc_coords[num_dimensions]);
 double omega(int n, int i);
 double little_n(int ang_coord_a, int ang_coord_b, double alpha, double beta, double center_a_coord, double center_b_coord, double t, double nuc_coord);
+double alt_little_n(int ang_coord_a, int ang_coord_b, double alpha, double beta, double center_a_coord, double center_b_coord, double t, double nuc_coord);
 double chebychev_integral_boys(int exp_a, int exp_b, struct Orbital orbital_a, struct Orbital orbital_b, double nuc_coords[num_dimensions]);
 double N_e_attraction(int exp_a, int exp_b, struct Orbital orbital_a, struct Orbital orbital_b, double nuc_coords[num_dimensions]);
 double hyp1f1_clone(double a, double b, double x);
+double hyp1f1_int_boys(double polynomial_terms[2], double alpha, double beta, struct Orbital orbital_a, struct Orbital orbital_b, double nuc_coords[num_dimensions]);
+double boys_func_hyp(double n, double T);
 
 int main(){
     //get info from files.
@@ -95,16 +98,18 @@ int main(){
     // results = exp(-(orbital_a.expC[0] * orbital_b.expC[0])/(orbital_a.expC[0] + orbital_b.expC[0]) * dist_squared(orbital_a.center, orbital_b.center))
     //     * (2 * M_PI / (orbital_a.expC[0] + orbital_b.expC[0]));
     // results = little_n(0, 0, orbital_a.expC[0], orbital_b.expC[0], orbital_a.center[1], orbital_b.center[1], 0, orbital_a.center[1]);
-    results = little_n(0, 1, orbital_a.expC[0], orbital_b.expC[0], orbital_a.center[2], orbital_b.center[2], 1, orbital_a.center[2]);
-    printf("Results: %lf\n", results);
+    // results = alt_little_n(0, 1, orbital_a.expC[0], orbital_b.expC[0], orbital_a.center[2], orbital_b.center[2], 1, orbital_a.center[2]);
+    // printf("Results: %lf\n", results);
 
     // printf("----------------------\n");
 
-    results = little_n(1, 0, orbital_a.expC[0], orbital_b.expC[0], orbital_a.center[2], orbital_b.center[2], 1, orbital_a.center[2]) + (orbital_a.center[2] - orbital_b.center[2]);
+    // results = alt_little_n(1, 0, orbital_a.expC[0], orbital_b.expC[0], orbital_a.center[2], orbital_b.center[2], 1, orbital_a.center[2]) + (orbital_a.center[2] - orbital_b.center[2]);
 
     // results = N_e_attraction(0,0, orbital_a, orbital_b, orbital_a.center);
     // results = boys_func(0, 0, 0, orbital_a, orbital_b, orbital_a.center);
     // results=chebychev_integral_boys(0,0,orbital_a, orbital_b,orbital_a.center);
+    // double polynomial_terms[2]={-0.4867, -0.71843};
+    // results = hyp1f1_int_boys(polynomial_terms, orbital_a.expC[0], orbital_b.expC[0], orbital_a, orbital_b, orbital_a.center); //This works!!
     printf("Results: %lf\n", results);
 
     return 0;
@@ -567,22 +572,74 @@ double little_n(int ang_coord_a, int ang_coord_b, double alpha, double beta, dou
     }
 }
 
-// double hyp1f1_clone(double a, double b, double x){
-//     double term = 1.0;
-//     double result = 1.0;
-//     int k = 0;
-//     while (fabs(term) > EPS * fabs(result)){
-//         //since each term is almost what is needed for the next, why recalculate all from scratch?
-//         term *= (a+k) * x / (b+k) / (k+1); //extending the pochhammer and factorial parts of the kth term. 
-//         result += term; //continue the sum
-//         k++;
-//     }
-//     return result;
-// }
+double alt_little_n(int ang_coord_a, int ang_coord_b, double alpha, double beta, double center_a_coord, double center_b_coord, double t, double nuc_coord){
+    //nuc-elec interaction of two gaussian primitives
+    //initial conditions
+    // printf("n(%d,%d)\n", ang_coord_a, ang_coord_b);
+    // printf("params n(%d,%d), a=%lf, b=%lf, A=%lf, B=%lf, t=%lf, RR=%lf\n", ang_coord_a, ang_coord_b, alpha, beta, center_a_coord, center_b_coord, t, nuc_coord);
+    if(ang_coord_a == 0 && ang_coord_b == 0){
+        // printf("n(0,0) = 1\n");
+        return 1;
+    }
+    double tsqrd = t * t;
+    double sum_ab = alpha + beta;
+    double aA_bB = alpha * center_a_coord + beta * center_b_coord;
+    double PC = aA_bB/sum_ab - nuc_coord;
+    // printf("basic integrals %lf     %lf\n", basic_int_1, basic_int_2);
+    if(ang_coord_a == 1 && ang_coord_b == 0){
+        // printf("Basic solution with a=1 b=0\n");
+        // printf("%lf     %lf\n", basic_int_1, basic_int_2);
+        return PC - PC * tsqrd;
+    }
+    //recurrence index
+    if(ang_coord_a > 1 && ang_coord_b == 0 ){
+        // printf("recurrence\n");
+        // printf("n(%d,%d) needs extra little n'\n", ang_coord_a, ang_coord_b);
+        double ang_down = ang_coord_a -1;
+        double a_down = alt_little_n(ang_down, 0, alpha, beta, center_a_coord, center_b_coord, t, nuc_coord);
+        double a_down2 = alt_little_n(ang_down-1, 0, alpha, beta, center_a_coord, center_b_coord, t, nuc_coord);
+        double adown_q2 = ang_down / (2 * sum_ab);
+        double a_downPC = a_down * PC;
+        
+        // printf("n(%d,%d) little n's %lf %lf\n",ang_coord_a, ang_coord_b, a_down, a_down2);
+        // return (ang_down * a_down2 * (1-tsqrd)) / q2 + 
+        //     a_down * (PC - PC * tsqrd);
+        return (adown_q2 * a_down2 + a_downPC) - tsqrd * (adown_q2 * a_down2 + a_downPC);
+    }
+    //transfer equation. Fallback if other options not hit.
+    if (ang_coord_a >= 0 || ang_coord_b >= 1){
+        // printf("transfer\n");
+        // printf("n(%d,%d) needs extra little n'\n", ang_coord_a, ang_coord_b);
+        double aup_bdown = alt_little_n(ang_coord_a+1, ang_coord_b-1, alpha, beta, center_a_coord, center_b_coord, t, nuc_coord);
+        double b_down = alt_little_n(ang_coord_a, ang_coord_b-1, alpha, beta, center_a_coord, center_b_coord, t, nuc_coord);
+        double center_diff = center_a_coord - center_b_coord;
+        // printf("n(%d,%d) little n's %lf %lf\n", ang_coord_a, ang_coord_b, aup_bdown, b_down);
+        return aup_bdown + center_diff * b_down;  
+    }
+    // in case of bad inputs.
+    if(ang_coord_a < 0 || ang_coord_b < 0){
+        printf("Bad angular momentum vector. Components need to be positive.");
+        return 1;
+        // exit(1);
+    }
+}
 
-// double boys_func(double n, double T){
-//     return hyp1f1_clone(n+0.5, n+1.5, -T) / (2*n + 1);
-// }
+double hyp1f1_clone(double a, double b, double x){
+    double term = 1.0;
+    double result = 1.0;
+    int k = 0;
+    while (fabs(term) > EPS * fabs(result)){
+        //since each term is almost what is needed for the next, why recalculate all from scratch?
+        term *= (a+k) * x / (b+k) / (k+1); //extending the pochhammer and factorial parts of the kth term. 
+        result += term; //continue the sum
+        k++;
+    }
+    return result;
+}
+
+double boys_func_hyp(double n, double T){
+    return hyp1f1_clone(n+0.5, n+1.5, -T) / (2*n + 1);
+}
 
 double boys_func(double x, int exp_a, int exp_b, struct Orbital orbital_a, struct Orbital orbital_b, double nuc_coords[num_dimensions]){
     double alpha = orbital_a.expC[exp_a];
@@ -667,6 +724,34 @@ double chebychev_integral_boys(int exp_a, int exp_b, struct Orbital orbital_a, s
         // printf("q = %lf, n = %lf\n", q, n);
     }
     return 16 * q / (3 * n);
+}
+
+double hyp1f1_int_boys(double polynomial_terms[2], double alpha, double beta, struct Orbital orbital_a, struct Orbital orbital_b, double nuc_coords[num_dimensions]){
+    double integral = 0;
+    double A[num_dimensions], B[num_dimensions], P[num_dimensions];
+    for(int i = 0; i < num_dimensions; i++){
+        A[i] = orbital_a.center[i];
+        B[i] = orbital_b.center[i];
+    }
+
+    scalar_mult(A, alpha);
+    scalar_mult(B, beta);
+
+    for (int i = 0; i<num_dimensions; i++){
+        P[i]=A[i]+B[i];
+        printf("%lf\n",P[i]);
+    }
+
+    scalar_mult(P, 1/(alpha+beta));
+
+    double T = (alpha + beta) * dist_squared(P, nuc_coords);
+    for(int i=0; i<2; i++){
+        integral += polynomial_terms[i] * boys_func_hyp(i, T);
+    }
+
+    // printf("%lf\n", integral);
+
+    return integral;
 }
 
 double N_e_attraction(int exp_a, int exp_b, struct Orbital orbital_a, struct Orbital orbital_b, double nuc_coords[num_dimensions]){
