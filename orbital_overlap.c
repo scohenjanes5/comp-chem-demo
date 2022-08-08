@@ -22,7 +22,7 @@ double get_norm_denominator(int angular_momentum_vector[num_dimensions]);
 int fact2(int n);
 double dist_squared(double coords_A[num_dimensions], double coords_B[num_dimensions]);
 double dot_product(double coords_A[num_dimensions], double coords_B[num_dimensions]);
-void scalar_mult(double *coords_pt, double scalar);
+void scalar_mult(double *coords_pt, double scalar, int size);
 double primitive_overlap(int dim_a, int dim_b, struct Orbital orbital_a, struct Orbital orbital_b);
 double little_s(int ang_coord_a, int ang_coord_b, double alpha, double beta, double center_a_coord, double center_b_coord);
 double orbital_overlap(struct Orbital orbital_a, struct Orbital orbital_b);
@@ -249,8 +249,8 @@ double dot_product(double coords_A[num_dimensions], double coords_B[num_dimensio
     return DP;
 }
 
-void scalar_mult(double *coords_pt, double scalar){ //uses pointers to multiply vector by scalar.
-    for(int i = 0; i < 3; i++){
+void scalar_mult(double *coords_pt, double scalar, int size){ //uses pointers to multiply vector by scalar.
+    for(int i = 0; i < size; i++){
         *(coords_pt + i) = *(coords_pt + i) * scalar;
     }
 }
@@ -653,13 +653,13 @@ double boys_func(double x, int exp_a, int exp_b, struct Orbital orbital_a, struc
         dummy_b[i] = orbital_b.center[i]; //B
     }
 
-    scalar_mult(dummy_a, alpha); // aA
-    scalar_mult(dummy_b, beta); // bB
+    scalar_mult(dummy_a, alpha, num_dimensions); // aA
+    scalar_mult(dummy_b, beta, num_dimensions); // bB
 
     for(int i = 0; i < num_dimensions; i++){
         aA_bB[i] = dummy_a[i] + dummy_b[i]; //vector addition --> aA+bB
     }
-    scalar_mult(aA_bB, 1/p); //scale the vector aA_bB is now P.
+    scalar_mult(aA_bB, 1/p, num_dimensions); //scale the vector aA_bB is now P.
     
     double result = 1;
     for(int i = 0; i < num_dimensions; i++){
@@ -734,14 +734,14 @@ double hyp1f1_int_boys(double polynomial_terms[2], double alpha, double beta, st
         B[i] = orbital_b.center[i];
     }
 
-    scalar_mult(A, alpha);
-    scalar_mult(B, beta);
+    scalar_mult(A, alpha, num_dimensions);
+    scalar_mult(B, beta, num_dimensions);
 
     for (int i = 0; i<num_dimensions; i++){
         P[i]=A[i]+B[i];
     }
 
-    scalar_mult(P, 1/(alpha+beta));
+    scalar_mult(P, 1/(alpha+beta), num_dimensions);
 
     double T = (alpha + beta) * dist_squared(P, nuc_coords);
     for(int i=0; i<2; i++){
