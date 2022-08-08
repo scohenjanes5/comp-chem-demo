@@ -95,16 +95,16 @@ int main(){
     // results = exp(-(orbital_a.expC[0] * orbital_b.expC[0])/(orbital_a.expC[0] + orbital_b.expC[0]) * dist_squared(orbital_a.center, orbital_b.center))
     //     * (2 * M_PI / (orbital_a.expC[0] + orbital_b.expC[0]));
     // results = little_n(0, 0, orbital_a.expC[0], orbital_b.expC[0], orbital_a.center[1], orbital_b.center[1], 0, orbital_a.center[1]);
-    // results = little_n(0, 1, orbital_a.expC[0], orbital_b.expC[0], orbital_a.center[2], orbital_b.center[2], 1, orbital_a.center[2]);
-    // printf("Results: %lf\n", results);
+    results = little_n(0, 2, orbital_a.expC[0], orbital_b.expC[0], orbital_a.center[2], orbital_b.center[2], 1, orbital_a.center[2]);
+    printf("Results: %lf\n", results);
 
     // printf("----------------------\n");
 
-    // results = little_n(1, 0, orbital_a.expC[0], orbital_b.expC[0], orbital_a.center[2], orbital_b.center[2], 1, orbital_a.center[2]) + (orbital_a.center[2] - orbital_b.center[2]);
+    results = little_n(2, 0, orbital_a.expC[0], orbital_b.expC[0], orbital_a.center[2], orbital_b.center[2], 1, orbital_a.center[2]) + (orbital_a.center[2] - orbital_b.center[2]);
 
     // results = N_e_attraction(0,0, orbital_a, orbital_b, orbital_a.center);
     // results = boys_func(0, 0, 0, orbital_a, orbital_b, orbital_a.center);
-    results=chebychev_integral_boys(0,0,orbital_a, orbital_b,orbital_a.center);
+    // results=chebychev_integral_boys(0,0,orbital_a, orbital_b,orbital_a.center);
     printf("Results: %lf\n", results);
 
     return 0;
@@ -550,7 +550,7 @@ double little_n(int ang_coord_a, int ang_coord_b, double alpha, double beta, dou
             a_down * PC - a_down * PC * tsqrd;
     }
     //transfer equation. Fallback if other options not hit.
-    if (ang_coord_a >= 0 || ang_coord_b >= 1){
+    if (ang_coord_b > 0){
         // printf("transfer\n");
         // printf("n(%d,%d) needs extra little n'\n", ang_coord_a, ang_coord_b);
         double aup_bdown = little_n(ang_coord_a+1, ang_coord_b-1, alpha, beta, center_a_coord, center_b_coord, t, nuc_coord);
