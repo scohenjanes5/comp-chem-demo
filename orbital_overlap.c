@@ -95,12 +95,12 @@ int main(){
     // results = exp(-(orbital_a.expC[0] * orbital_b.expC[0])/(orbital_a.expC[0] + orbital_b.expC[0]) * dist_squared(orbital_a.center, orbital_b.center))
     //     * (2 * M_PI / (orbital_a.expC[0] + orbital_b.expC[0]));
     // results = little_n(0, 0, orbital_a.expC[0], orbital_b.expC[0], orbital_a.center[1], orbital_b.center[1], 0, orbital_a.center[1]);
-    results = little_n(0, 2, orbital_a.expC[0], orbital_b.expC[0], orbital_a.center[2], orbital_b.center[2], 1, orbital_a.center[2]);
+    results = little_n(0, 1, orbital_a.expC[0], orbital_b.expC[0], orbital_a.center[2], orbital_b.center[2], 1, orbital_a.center[2]);
     printf("Results: %lf\n", results);
 
     // printf("----------------------\n");
 
-    results = little_n(2, 0, orbital_a.expC[0], orbital_b.expC[0], orbital_a.center[2], orbital_b.center[2], 1, orbital_a.center[2]) + (orbital_a.center[2] - orbital_b.center[2]);
+    results = little_n(1, 0, orbital_a.expC[0], orbital_b.expC[0], orbital_a.center[2], orbital_b.center[2], 1, orbital_a.center[2]) + (orbital_a.center[2] - orbital_b.center[2]);
 
     // results = N_e_attraction(0,0, orbital_a, orbital_b, orbital_a.center);
     // results = boys_func(0, 0, 0, orbital_a, orbital_b, orbital_a.center);
