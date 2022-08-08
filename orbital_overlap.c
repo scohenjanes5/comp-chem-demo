@@ -7,6 +7,7 @@
 #define Num_Orbitals 9
 #define num_dimensions 3
 #define EPS 10E-10 
+#define MAX_POLYNOMIAL_SIZE 10
 
 //store orbital info
 struct Orbital {
@@ -35,12 +36,13 @@ double abscissa(int n, int i);
 double boys_func(double x, int exp_a, int exp_b, struct Orbital orbital_a, struct Orbital orbital_b, double nuc_coords[num_dimensions]);
 double omega(int n, int i);
 double little_n(int ang_coord_a, int ang_coord_b, double alpha, double beta, double center_a_coord, double center_b_coord, double t, double nuc_coord);
-double alt_little_n(int ang_coord_a, int ang_coord_b, double alpha, double beta, double center_a_coord, double center_b_coord, double t, double nuc_coord);
+void alt_little_n(int ang_coord_a, int ang_coord_b, double alpha, double beta, double center_a_coord, double center_b_coord, double nuc_coord, double *polynomial_pointer);
 double chebychev_integral_boys(int exp_a, int exp_b, struct Orbital orbital_a, struct Orbital orbital_b, double nuc_coords[num_dimensions]);
 double N_e_attraction(int exp_a, int exp_b, struct Orbital orbital_a, struct Orbital orbital_b, double nuc_coords[num_dimensions]);
 double hyp1f1_clone(double a, double b, double x);
 double hyp1f1_int_boys(double polynomial_terms[2], double alpha, double beta, struct Orbital orbital_a, struct Orbital orbital_b, double nuc_coords[num_dimensions]);
 double boys_func_hyp(double n, double T);
+void foil_polynomials(double *polynomial_ptr_1, double *polynomial_ptr_2, double *result_ptr);
 
 int main(){
     //get info from files.
@@ -98,19 +100,26 @@ int main(){
     // results = exp(-(orbital_a.expC[0] * orbital_b.expC[0])/(orbital_a.expC[0] + orbital_b.expC[0]) * dist_squared(orbital_a.center, orbital_b.center))
     //     * (2 * M_PI / (orbital_a.expC[0] + orbital_b.expC[0]));
     // results = little_n(0, 0, orbital_a.expC[0], orbital_b.expC[0], orbital_a.center[1], orbital_b.center[1], 0, orbital_a.center[1]);
-    // results = alt_little_n(0, 1, orbital_a.expC[0], orbital_b.expC[0], orbital_a.center[2], orbital_b.center[2], 1, orbital_a.center[2]);
+    double polynomial_1[MAX_POLYNOMIAL_SIZE], polynomial_2[MAX_POLYNOMIAL_SIZE];
+    alt_little_n(0, 1, orbital_a.expC[0], orbital_b.expC[0], orbital_a.center[2], orbital_b.center[2], orbital_a.center[2], polynomial_1);
     // printf("Results: %lf\n", results);
 
-    // printf("----------------------\n");
+    printf("----------------------\n");
 
-    // results = alt_little_n(1, 0, orbital_a.expC[0], orbital_b.expC[0], orbital_a.center[2], orbital_b.center[2], 1, orbital_a.center[2]) + (orbital_a.center[2] - orbital_b.center[2]);
+    alt_little_n(1, 0, orbital_a.expC[0], orbital_b.expC[0], orbital_a.center[2], orbital_b.center[2], orbital_a.center[2], polynomial_2);
+    polynomial_2[0]+=(orbital_a.center[2] - orbital_b.center[2]);
+
+    printf("polynomial 1 and 2, columnwise.\n");
+    for (int i = 0; i < MAX_POLYNOMIAL_SIZE; i++){
+        printf("%lf     %lf\n", polynomial_1[i], polynomial_2[i]);
+    }
 
     // results = N_e_attraction(0,0, orbital_a, orbital_b, orbital_a.center);
     // results = boys_func(0, 0, 0, orbital_a, orbital_b, orbital_a.center);
     // results=chebychev_integral_boys(0,0,orbital_a, orbital_b,orbital_a.center);
-    double polynomial_terms[2]={-0.4867, -0.71843};
-    results = hyp1f1_int_boys(polynomial_terms, orbital_a.expC[0], orbital_b.expC[0], orbital_a, orbital_b, orbital_a.center); //This works!!
-    printf("Results: %lf\n", results);
+    // double polynomial_terms[2]={-0.4867, -0.71843};
+    // results = hyp1f1_int_boys(polynomial_terms, orbital_a.expC[0], orbital_b.expC[0], orbital_a, orbital_b, orbital_a.center); //This works!!
+    // printf("Results: %lf\n", results);
 
     return 0;
 }
@@ -543,19 +552,18 @@ double little_n(int ang_coord_a, int ang_coord_b, double alpha, double beta, dou
     if(ang_coord_a > 1 && ang_coord_b == 0 ){
         // printf("recurrence\n");
         // printf("n(%d,%d) needs extra little n'\n", ang_coord_a, ang_coord_b);
-        double ang_down = ang_coord_a -1;
-        double a_down = little_n(ang_down, 0, alpha, beta, center_a_coord, center_b_coord, t, nuc_coord);
-        double a_down2 = little_n(ang_down-1, 0, alpha, beta, center_a_coord, center_b_coord, t, nuc_coord);
-        double adown_q2 = ang_down / (2 * sum_ab);
+        double a_down = little_n(ang_coord_a - 1, 0, alpha, beta, center_a_coord, center_b_coord, t, nuc_coord);
+        double a_down2 = little_n(ang_coord_a - 2, 0, alpha, beta, center_a_coord, center_b_coord, t, nuc_coord);
+        double adown_q2 = (ang_coord_a - 1) / (2 * sum_ab);
         
         // printf("n(%d,%d) little n's %lf %lf\n",ang_coord_a, ang_coord_b, a_down, a_down2);
-        // return (ang_down * a_down2 * (1-tsqrd)) / q2 + 
+        // return ((ang_coord_a - 1) * a_down2 * (1-tsqrd)) / q2 + 
         //     a_down * (PC - PC * tsqrd);
         return adown_q2 * a_down2 - adown_q2 * a_down2 * tsqrd + 
             a_down * PC - a_down * PC * tsqrd;
     }
     //transfer equation. Fallback if other options not hit.
-    if (ang_coord_a >= 0 || ang_coord_b >= 1){
+    if (ang_coord_b > 0){
         // printf("transfer\n");
         // printf("n(%d,%d) needs extra little n'\n", ang_coord_a, ang_coord_b);
         double aup_bdown = little_n(ang_coord_a+1, ang_coord_b-1, alpha, beta, center_a_coord, center_b_coord, t, nuc_coord);
@@ -572,16 +580,46 @@ double little_n(int ang_coord_a, int ang_coord_b, double alpha, double beta, dou
     }
 }
 
-double alt_little_n(int ang_coord_a, int ang_coord_b, double alpha, double beta, double center_a_coord, double center_b_coord, double t, double nuc_coord){
+void foil_polynomials(double *polynomial_ptr_1, double *polynomial_ptr_2, double *result_ptr){
+    double results[MAX_POLYNOMIAL_SIZE][MAX_POLYNOMIAL_SIZE]; //as we multiply the polynomials, we get as many polynomials as there are terms in the polynomial with the highest number of terms. Each goes up to MAX_POLYNOMIAL_SIZE terms though most terms are 0.
+    for (int i = 0; i < MAX_POLYNOMIAL_SIZE; i++){
+        // printf("i=%d\n",i);
+        for (int j = 0; j < MAX_POLYNOMIAL_SIZE; j++){
+            // printf("j=%d\n",j);
+            if(i+j>=MAX_POLYNOMIAL_SIZE){
+                // printf("avoiding illegal write\n");
+                continue; //don't try to fill in illegal index. This may truncate the polynomial but not with our small numbers.
+            }
+            // printf("%lf * %lf\n", *(polynomial_ptr_1 + i) , *(polynomial_ptr_2 + j));
+            results[i+j][i] = *(polynomial_ptr_1 + i) * *(polynomial_ptr_2 + j);
+        }
+    }
+    //now we combine like terms. for all the polynomials
+
+    for(int j = 0; j < MAX_POLYNOMIAL_SIZE; j++){ //cols
+        for(int i = 0; i < MAX_POLYNOMIAL_SIZE; i++){ //rows
+            // printf("results[%d][%d] %lf\n", j,i,results[j][i]);
+            *(result_ptr+j) += results[j][i];
+        }
+    }
+    // for(int j=0; j<MAX_POLYNOMIAL_SIZE; j++){
+    //     printf("%lf\n", *(result_ptr+j));
+    // }
+}
+
+void alt_little_n(int ang_coord_a, int ang_coord_b, double alpha, double beta, double center_a_coord, double center_b_coord, double nuc_coord, double *polynomial_pointer){
     //nuc-elec interaction of two gaussian primitives
+    //modifies an array representing a polynomial that will be integrated by term later.
+    //index i in the array represents i in t^(2i). the values are the coefficients of t.
     //initial conditions
     // printf("n(%d,%d)\n", ang_coord_a, ang_coord_b);
     // printf("params n(%d,%d), a=%lf, b=%lf, A=%lf, B=%lf, t=%lf, RR=%lf\n", ang_coord_a, ang_coord_b, alpha, beta, center_a_coord, center_b_coord, t, nuc_coord);
     if(ang_coord_a == 0 && ang_coord_b == 0){
         // printf("n(0,0) = 1\n");
-        return 1;
+        *(polynomial_pointer) += 1;
+        return;
     }
-    double tsqrd = t * t;
+    // double tsqrd = t * t;
     double sum_ab = alpha + beta;
     double aA_bB = alpha * center_a_coord + beta * center_b_coord;
     double PC = aA_bB/sum_ab - nuc_coord;
@@ -589,37 +627,66 @@ double alt_little_n(int ang_coord_a, int ang_coord_b, double alpha, double beta,
     if(ang_coord_a == 1 && ang_coord_b == 0){
         // printf("Basic solution with a=1 b=0\n");
         // printf("%lf     %lf\n", basic_int_1, basic_int_2);
-        return PC - PC * tsqrd;
+        *(polynomial_pointer) += PC; //add like terms to existing polynomial
+        *(polynomial_pointer + 1) += PC; //add like terms to existing polynomial
+        return; //PC - PC * tsqrd;
     }
+    double dummy_pol_1[MAX_POLYNOMIAL_SIZE], dummy_pol_2[MAX_POLYNOMIAL_SIZE]; //arrays to collect terms from recursive calls
     //recurrence index
     if(ang_coord_a > 1 && ang_coord_b == 0 ){
         // printf("recurrence\n");
         // printf("n(%d,%d) needs extra little n'\n", ang_coord_a, ang_coord_b);
-        double ang_down = ang_coord_a -1;
-        double a_down = alt_little_n(ang_down, 0, alpha, beta, center_a_coord, center_b_coord, t, nuc_coord);
-        double a_down2 = alt_little_n(ang_down-1, 0, alpha, beta, center_a_coord, center_b_coord, t, nuc_coord);
-        double adown_q2 = ang_down / (2 * sum_ab);
-        double a_downPC = a_down * PC;
-        
+
+        // double a_down = alt_little_n((ang_coord_a - 1), 0, alpha, beta, center_a_coord, center_b_coord, t, nuc_coord);
+        // double a_down2 = alt_little_n((ang_coord_a - 1)-1, 0, alpha, beta, center_a_coord, center_b_coord, t, nuc_coord);
+        alt_little_n(ang_coord_a - 1, 0, alpha, beta, center_a_coord, center_b_coord, nuc_coord, dummy_pol_1);
+        alt_little_n(ang_coord_a - 2, 0, alpha, beta, center_a_coord, center_b_coord, nuc_coord, dummy_pol_2);
+        double adown_q2 = (ang_coord_a - 1) / (2 * sum_ab);
+        // double a_downPC = a_down * PC;
+        // return (adown_q2 * a_down2 + a_down * PC) - tsqrd * (adown_q2 * a_down2 + a_down * PC);
+
+        scalar_mult(dummy_pol_1, PC, MAX_POLYNOMIAL_SIZE);
+        scalar_mult(dummy_pol_2, adown_q2, MAX_POLYNOMIAL_SIZE);
+
+        //The sum of each of these is used twice so let's make each one into the sum.
+        for(int i = 0; i < MAX_POLYNOMIAL_SIZE; i++){
+            dummy_pol_1[i]=dummy_pol_1[i]+ dummy_pol_2[i];
+            dummy_pol_2[i]=dummy_pol_1[i]+ dummy_pol_2[i];
+        }
+        for (int i=MAX_POLYNOMIAL_SIZE-2; i >= 0; i--){ //start at one slot before the last.
+            // use the first copy as is. need to "multiply each term by t^2" in the second copy.
+            dummy_pol_2[i+1] = dummy_pol_2[i];
+            //combine with like terms in the output array.
+            *(polynomial_pointer + i) += dummy_pol_1[i] - dummy_pol_2[i];
+                                    //unmodified sum  -    sum * t^2
+        }
         // printf("n(%d,%d) little n's %lf %lf\n",ang_coord_a, ang_coord_b, a_down, a_down2);
-        // return (ang_down * a_down2 * (1-tsqrd)) / q2 + 
+        // return ((ang_coord_a - 1) * a_down2 * (1-tsqrd)) / q2 + 
         //     a_down * (PC - PC * tsqrd);
-        return (adown_q2 * a_down2 + a_downPC) - tsqrd * (adown_q2 * a_down2 + a_downPC);
+        return;
     }
     //transfer equation. Fallback if other options not hit.
-    if (ang_coord_a >= 0 || ang_coord_b >= 1){
+    if (ang_coord_b > 0){
         // printf("transfer\n");
         // printf("n(%d,%d) needs extra little n'\n", ang_coord_a, ang_coord_b);
-        double aup_bdown = alt_little_n(ang_coord_a+1, ang_coord_b-1, alpha, beta, center_a_coord, center_b_coord, t, nuc_coord);
-        double b_down = alt_little_n(ang_coord_a, ang_coord_b-1, alpha, beta, center_a_coord, center_b_coord, t, nuc_coord);
+        // double aup_bdown = alt_little_n(ang_coord_a+1, ang_coord_b-1, alpha, beta, center_a_coord, center_b_coord, nuc_coord, dummy_pol_1);
+        // double b_down = alt_little_n(ang_coord_a, ang_coord_b-1, alpha, beta, center_a_coord, center_b_coord, nuc_coord, dummy_pol_2);
+        alt_little_n(ang_coord_a+1, ang_coord_b-1, alpha, beta, center_a_coord, center_b_coord, nuc_coord, dummy_pol_1);
+        alt_little_n(ang_coord_a, ang_coord_b-1, alpha, beta, center_a_coord, center_b_coord, nuc_coord, dummy_pol_2);
         double center_diff = center_a_coord - center_b_coord;
         // printf("n(%d,%d) little n's %lf %lf\n", ang_coord_a, ang_coord_b, aup_bdown, b_down);
-        return aup_bdown + center_diff * b_down;  
+        scalar_mult(dummy_pol_2, center_diff, MAX_POLYNOMIAL_SIZE);
+        // printf("")
+        for (int i = 0; i < MAX_POLYNOMIAL_SIZE; i++){
+            printf("%lf     %lf\n", dummy_pol_1[i], dummy_pol_2[i]);
+            *(polynomial_pointer + i) += dummy_pol_1[i] + dummy_pol_2[i];
+        }
+        return; // aup_bdown + center_diff * b_down;  
     }
     // in case of bad inputs.
     if(ang_coord_a < 0 || ang_coord_b < 0){
         printf("Bad angular momentum vector. Components need to be positive.");
-        return 1;
+        return; //1;
         // exit(1);
     }
 }
