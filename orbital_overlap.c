@@ -108,8 +108,8 @@ int main(){
     // results = N_e_attraction(0,0, orbital_a, orbital_b, orbital_a.center);
     // results = boys_func(0, 0, 0, orbital_a, orbital_b, orbital_a.center);
     // results=chebychev_integral_boys(0,0,orbital_a, orbital_b,orbital_a.center);
-    // double polynomial_terms[2]={-0.4867, -0.71843};
-    // results = hyp1f1_int_boys(polynomial_terms, orbital_a.expC[0], orbital_b.expC[0], orbital_a, orbital_b, orbital_a.center); //This works!!
+    double polynomial_terms[2]={-0.4867, -0.71843};
+    results = hyp1f1_int_boys(polynomial_terms, orbital_a.expC[0], orbital_b.expC[0], orbital_a, orbital_b, orbital_a.center); //This works!!
     printf("Results: %lf\n", results);
 
     return 0;
@@ -739,7 +739,6 @@ double hyp1f1_int_boys(double polynomial_terms[2], double alpha, double beta, st
 
     for (int i = 0; i<num_dimensions; i++){
         P[i]=A[i]+B[i];
-        printf("%lf\n",P[i]);
     }
 
     scalar_mult(P, 1/(alpha+beta));
