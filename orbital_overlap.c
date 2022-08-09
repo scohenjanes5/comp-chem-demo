@@ -96,7 +96,11 @@ int main(){
 
     //testing NE functions
     double results;
-    // results = little_n(0, 0, orbital_a.expC[0], orbital_b.expC[0], orbital_a.center[0], orbital_b.center[0], 0, orbital_a.center[0]);
+    int alpha = 0;
+    int beta = 0;
+    double t2_coefs[10]; //maybe there is a way to tell how big the polynomial order will get. 
+                        //index is n in t^(2n). 
+    // results = alt_little_n(0, 0, orbital_a.expC[0], orbital_b.expC[0], orbital_a.center[0], orbital_b.center[0], 0, orbital_a.center[0]);
     // results = exp(-(orbital_a.expC[0] * orbital_b.expC[0])/(orbital_a.expC[0] + orbital_b.expC[0]) * dist_squared(orbital_a.center, orbital_b.center))
     //     * (2 * M_PI / (orbital_a.expC[0] + orbital_b.expC[0]));
     // results = little_n(0, 0, orbital_a.expC[0], orbital_b.expC[0], orbital_a.center[1], orbital_b.center[1], 0, orbital_a.center[1]);
@@ -104,7 +108,7 @@ int main(){
     alt_little_n(0, 1, orbital_a.expC[0], orbital_b.expC[0], orbital_a.center[2], orbital_b.center[2], orbital_a.center[2], polynomial_1);
     // printf("Results: %lf\n", results);
 
-    // printf("----------------------\n");
+    printf("----------------------\n");
 
     alt_little_n(1, 0, orbital_a.expC[0], orbital_b.expC[0], orbital_a.center[2], orbital_b.center[2], orbital_a.center[2], polynomial_2);
     polynomial_2[0]+=(orbital_a.center[2] - orbital_b.center[2]);
@@ -119,6 +123,7 @@ int main(){
     // results=chebychev_integral_boys(0,0,orbital_a, orbital_b,orbital_a.center);
     // double polynomial_terms[2]={-0.4867, -0.71843};
     // results = hyp1f1_int_boys(polynomial_terms, orbital_a.expC[0], orbital_b.expC[0], orbital_a, orbital_b, orbital_a.center); //This works!!
+
     printf("Results: %lf\n", results);
 
     return 0;
@@ -567,6 +572,7 @@ void alt_little_n(int ang_coord_a, int ang_coord_b, double alpha, double beta, d
         *(polynomial_pointer) += coord_salad; //add like terms to existing polynomial
         *(polynomial_pointer + 1) -= PC; //add like terms to existing polynomial
         return; //-center_a_coord + aA_bB/sum_ab  - PC * tsqrd;
+
     }
     double dummy_pol_1[MAX_POLYNOMIAL_SIZE], dummy_pol_2[MAX_POLYNOMIAL_SIZE]; //arrays to collect terms from recursive calls
     //recurrence index
@@ -574,7 +580,6 @@ void alt_little_n(int ang_coord_a, int ang_coord_b, double alpha, double beta, d
         double sum_1[MAX_POLYNOMIAL_SIZE];
         // printf("recurrence\n");
         // printf("n(%d,%d) needs extra little n'\n", ang_coord_a, ang_coord_b);
-
         // double a_down = alt_little_n((ang_coord_a - 1), 0, alpha, beta, center_a_coord, center_b_coord, t, nuc_coord);
         // double a_down2 = alt_little_n((ang_coord_a - 1)-1, 0, alpha, beta, center_a_coord, center_b_coord, t, nuc_coord);
         alt_little_n(ang_coord_a - 1, 0, alpha, beta, center_a_coord, center_b_coord, nuc_coord, dummy_pol_1);
