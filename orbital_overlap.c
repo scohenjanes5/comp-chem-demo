@@ -96,10 +96,6 @@ int main(){
 
     //testing NE functions
     double results;
-    int alpha = 0;
-    int beta = 0;
-    double t2_coefs[10]; //maybe there is a way to tell how big the polynomial order will get. 
-                        //index is n in t^(2n). 
     // results = alt_little_n(0, 0, orbital_a.expC[0], orbital_b.expC[0], orbital_a.center[0], orbital_b.center[0], 0, orbital_a.center[0]);
     // results = exp(-(orbital_a.expC[0] * orbital_b.expC[0])/(orbital_a.expC[0] + orbital_b.expC[0]) * dist_squared(orbital_a.center, orbital_b.center))
     //     * (2 * M_PI / (orbital_a.expC[0] + orbital_b.expC[0]));
@@ -108,7 +104,7 @@ int main(){
     alt_little_n(0, 1, orbital_a.expC[0], orbital_b.expC[0], orbital_a.center[2], orbital_b.center[2], orbital_a.center[2], polynomial_1);
     // printf("Results: %lf\n", results);
 
-    printf("----------------------\n");
+    // printf("----------------------\n");
 
     alt_little_n(1, 0, orbital_a.expC[0], orbital_b.expC[0], orbital_a.center[2], orbital_b.center[2], orbital_a.center[2], polynomial_2);
     polynomial_2[0]+=(orbital_a.center[2] - orbital_b.center[2]);
