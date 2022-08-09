@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <math.h>
-#include <stdlib.h> /*for system()*/
+#include <stdlib.h> /*for system() and exit*/
 
 #define NUMATOMS 3
 #define BS_Size 7
@@ -32,12 +32,7 @@ double little_k(int ang_coord_a, int ang_coord_b, double alpha, double beta, dou
 double orbital_kinetic_energy_integral(struct Orbital orbital_a, struct Orbital orbital_b);
 double primitives_KE(int primitive_idx_a, int primitive_idx_b, struct Orbital orbital_a, struct Orbital orbital_b);
 void Calc_BS_KE_Matrix(struct Orbital orbital_array[Num_Orbitals], double KE_matrix[BS_Size][BS_Size], int indicies[BS_Size]);
-double abscissa(int n, int i);
-double boys_func(double x, int exp_a, int exp_b, struct Orbital orbital_a, struct Orbital orbital_b, double nuc_coords[num_dimensions]);
-double omega(int n, int i);
-double little_n(int ang_coord_a, int ang_coord_b, double alpha, double beta, double center_a_coord, double center_b_coord, double t, double nuc_coord);
-void alt_little_n(int ang_coord_a, int ang_coord_b, double alpha, double beta, double center_a_coord, double center_b_coord, double nuc_coord, double *polynomial_pointer);
-double chebychev_integral_boys(int exp_a, int exp_b, struct Orbital orbital_a, struct Orbital orbital_b, double nuc_coords[num_dimensions]);
+void little_n(int ang_coord_a, int ang_coord_b, double alpha, double beta, double center_a_coord, double center_b_coord, double nuc_coord, double *polynomial_pointer);
 double N_e_attraction(int exp_a, int exp_b, struct Orbital orbital_a, struct Orbital orbital_b, double nuc_coords[num_dimensions]);
 double hyp1f1_clone(double a, double b, double x);
 double hyp1f1_int_boys(double polynomial_terms[2], double alpha, double beta, struct Orbital orbital_a, struct Orbital orbital_b, double nuc_coords[num_dimensions]);
@@ -96,18 +91,18 @@ int main(){
 
     //testing NE functions
     double results;
-    // results = alt_little_n(0, 0, orbital_a.expC[0], orbital_b.expC[0], orbital_a.center[0], orbital_b.center[0], 0, orbital_a.center[0]);
+    // results = little_n(0, 0, orbital_a.expC[0], orbital_b.expC[0], orbital_a.center[0], orbital_b.center[0], 0, orbital_a.center[0]);
     // results = exp(-(orbital_a.expC[0] * orbital_b.expC[0])/(orbital_a.expC[0] + orbital_b.expC[0]) * dist_squared(orbital_a.center, orbital_b.center))
     //     * (2 * M_PI / (orbital_a.expC[0] + orbital_b.expC[0]));
     // results = little_n(0, 0, orbital_a.expC[0], orbital_b.expC[0], orbital_a.center[1], orbital_b.center[1], 0, orbital_a.center[1]);
 
     double polynomial_1[MAX_POLYNOMIAL_SIZE], polynomial_2[MAX_POLYNOMIAL_SIZE];
-    alt_little_n(0, 1, orbital_a.expC[0], orbital_b.expC[0], orbital_a.center[2], orbital_b.center[2], orbital_a.center[2], polynomial_1);
+    little_n(0, 1, orbital_a.expC[0], orbital_b.expC[0], orbital_a.center[2], orbital_b.center[2], orbital_a.center[2], polynomial_1);
     // printf("Results: %lf\n", results);
 
     // printf("----------------------\n");
 
-    alt_little_n(1, 0, orbital_a.expC[0], orbital_b.expC[0], orbital_a.center[2], orbital_b.center[2], orbital_a.center[2], polynomial_2);
+    little_n(1, 0, orbital_a.expC[0], orbital_b.expC[0], orbital_a.center[2], orbital_b.center[2], orbital_a.center[2], polynomial_2);
     polynomial_2[0]+=(orbital_a.center[2] - orbital_b.center[2]);
 
     // printf("polynomial 1 and 2, columnwise.\n");
@@ -545,7 +540,7 @@ void foil_polynomials(double *polynomial_ptr_1, double *polynomial_ptr_2, double
     // }
 }
 
-void alt_little_n(int ang_coord_a, int ang_coord_b, double alpha, double beta, double center_a_coord, double center_b_coord, double nuc_coord, double *polynomial_pointer){
+void little_n(int ang_coord_a, int ang_coord_b, double alpha, double beta, double center_a_coord, double center_b_coord, double nuc_coord, double *polynomial_pointer){
     //nuc-elec interaction of two gaussian primitives
     //modifies an array representing a polynomial that will be integrated by term later.
     //index i in the array represents i in t^(2i). the values are the coefficients of t.
@@ -576,10 +571,10 @@ void alt_little_n(int ang_coord_a, int ang_coord_b, double alpha, double beta, d
         double sum_1[MAX_POLYNOMIAL_SIZE];
         // printf("recurrence\n");
         // printf("n(%d,%d) needs extra little n'\n", ang_coord_a, ang_coord_b);
-        // double a_down = alt_little_n((ang_coord_a - 1), 0, alpha, beta, center_a_coord, center_b_coord, t, nuc_coord);
-        // double a_down2 = alt_little_n((ang_coord_a - 1)-1, 0, alpha, beta, center_a_coord, center_b_coord, t, nuc_coord);
-        alt_little_n(ang_coord_a - 1, 0, alpha, beta, center_a_coord, center_b_coord, nuc_coord, dummy_pol_1);
-        alt_little_n(ang_coord_a - 2, 0, alpha, beta, center_a_coord, center_b_coord, nuc_coord, dummy_pol_2);
+        // double a_down = little_n((ang_coord_a - 1), 0, alpha, beta, center_a_coord, center_b_coord, t, nuc_coord);
+        // double a_down2 = little_n((ang_coord_a - 1)-1, 0, alpha, beta, center_a_coord, center_b_coord, t, nuc_coord);
+        little_n(ang_coord_a - 1, 0, alpha, beta, center_a_coord, center_b_coord, nuc_coord, dummy_pol_1);
+        little_n(ang_coord_a - 2, 0, alpha, beta, center_a_coord, center_b_coord, nuc_coord, dummy_pol_2);
         double adown_q2 = (ang_coord_a - 1) / (2 * sum_ab);
         // double a_downPC = a_down * PC;
         // return (adown_q2 * a_down2 + a_down * PC) - tsqrd * (adown_q2 * a_down2 + a_down * PC);
@@ -621,10 +616,10 @@ void alt_little_n(int ang_coord_a, int ang_coord_b, double alpha, double beta, d
         }
         // printf("transfer\n");
         // printf("n(%d,%d) needs extra little n'\n", ang_coord_a, ang_coord_b);
-        // double aup_bdown = alt_little_n(ang_coord_a+1, ang_coord_b-1, alpha, beta, center_a_coord, center_b_coord, nuc_coord, dummy_pol_1);
-        // double b_down = alt_little_n(ang_coord_a, ang_coord_b-1, alpha, beta, center_a_coord, center_b_coord, nuc_coord, dummy_pol_2);
-        alt_little_n(ang_coord_a+1, ang_coord_b-1, alpha, beta, center_a_coord, center_b_coord, nuc_coord, dummy_pol_1);
-        alt_little_n(ang_coord_a, ang_coord_b-1, alpha, beta, center_a_coord, center_b_coord, nuc_coord, dummy_pol_2);
+        // double aup_bdown = little_n(ang_coord_a+1, ang_coord_b-1, alpha, beta, center_a_coord, center_b_coord, nuc_coord, dummy_pol_1);
+        // double b_down = little_n(ang_coord_a, ang_coord_b-1, alpha, beta, center_a_coord, center_b_coord, nuc_coord, dummy_pol_2);
+        little_n(ang_coord_a+1, ang_coord_b-1, alpha, beta, center_a_coord, center_b_coord, nuc_coord, dummy_pol_1);
+        little_n(ang_coord_a, ang_coord_b-1, alpha, beta, center_a_coord, center_b_coord, nuc_coord, dummy_pol_2);
         double center_diff = center_a_coord - center_b_coord;
         // printf("n(%d,%d) little n's %lf %lf\n", ang_coord_a, ang_coord_b, aup_bdown, b_down);
         scalar_mult(dummy_pol_2, center_diff, MAX_POLYNOMIAL_SIZE);
@@ -688,7 +683,7 @@ double N_e_attraction(int exp_a, int exp_b, struct Orbital orbital_a, struct Orb
     double EAB = exp(-(alpha * beta)/sum_ab * dist_squared(orbital_a.center, orbital_b.center));
     double polynomial[MAX_POLYNOMIAL_SIZE]={0,0,0,0,0,0,0,0,0,0};
 
-    alt_little_n(0, 1, alpha, beta, orbital_a.center[2], orbital_b.center[2], orbital_a.center[2], polynomial);
+    little_n(0, 1, alpha, beta, orbital_a.center[2], orbital_b.center[2], orbital_a.center[2], polynomial);
     
     // for (int i = 0; i < MAX_POLYNOMIAL_SIZE; i++){
     //     printf("%lf\n",polynomial[i]);
