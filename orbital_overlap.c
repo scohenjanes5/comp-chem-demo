@@ -100,6 +100,7 @@ int main(){
     // results = exp(-(orbital_a.expC[0] * orbital_b.expC[0])/(orbital_a.expC[0] + orbital_b.expC[0]) * dist_squared(orbital_a.center, orbital_b.center))
     //     * (2 * M_PI / (orbital_a.expC[0] + orbital_b.expC[0]));
     // results = little_n(0, 0, orbital_a.expC[0], orbital_b.expC[0], orbital_a.center[1], orbital_b.center[1], 0, orbital_a.center[1]);
+
     double polynomial_1[MAX_POLYNOMIAL_SIZE], polynomial_2[MAX_POLYNOMIAL_SIZE];
     alt_little_n(0, 1, orbital_a.expC[0], orbital_b.expC[0], orbital_a.center[2], orbital_b.center[2], orbital_a.center[2], polynomial_1);
     // printf("Results: %lf\n", results);
@@ -568,7 +569,6 @@ void alt_little_n(int ang_coord_a, int ang_coord_b, double alpha, double beta, d
         *(polynomial_pointer) += coord_salad; //add like terms to existing polynomial
         *(polynomial_pointer + 1) -= PC; //add like terms to existing polynomial
         return; //-center_a_coord + aA_bB/sum_ab  - PC * tsqrd;
-
     }
     double dummy_pol_1[MAX_POLYNOMIAL_SIZE], dummy_pol_2[MAX_POLYNOMIAL_SIZE]; //arrays to collect terms from recursive calls
     //recurrence index
@@ -678,6 +678,7 @@ double hyp1f1_int_boys(double polynomial_terms[MAX_POLYNOMIAL_SIZE], double alph
     }
     // printf("%lf\n", integral);
     return integral;
+
 }
 
 double N_e_attraction(int exp_a, int exp_b, struct Orbital orbital_a, struct Orbital orbital_b, double nuc_coords[num_dimensions]){
