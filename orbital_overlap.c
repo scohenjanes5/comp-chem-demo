@@ -6,6 +6,7 @@
 #define BS_Size 7
 #define Num_Orbitals 9
 #define num_dimensions 3
+#define primitives_per_orbital 3
 #define EPS 10E-10 
 #define MAX_POLYNOMIAL_SIZE 10
 
@@ -33,7 +34,7 @@ double orbital_kinetic_energy_integral(struct Orbital orbital_a, struct Orbital 
 double primitives_KE(int primitive_idx_a, int primitive_idx_b, struct Orbital orbital_a, struct Orbital orbital_b);
 void Calc_BS_KE_Matrix(struct Orbital orbital_array[Num_Orbitals], double KE_matrix[BS_Size][BS_Size], int indicies[BS_Size]);
 void little_n(int ang_coord_a, int ang_coord_b, double alpha, double beta, double center_a_coord, double center_b_coord, double nuc_coord, double *polynomial_pointer);
-double N_e_attraction(int exp_a, int exp_b, struct Orbital orbital_a, struct Orbital orbital_b, double nuc_coords[num_dimensions]);
+double N_e_attraction(double alpha, double beta, struct Orbital orbital_a, struct Orbital orbital_b, double nuc_coords[num_dimensions]);
 double hyp1f1_clone(double a, double b, double x);
 double hyp1f1_int_boys(double polynomial_terms[2], double alpha, double beta, struct Orbital orbital_a, struct Orbital orbital_b, double nuc_coords[num_dimensions]);
 double boys_func_hyp(double n, double T);
@@ -98,19 +99,19 @@ int main(){
 
     double polynomial_1[MAX_POLYNOMIAL_SIZE], polynomial_2[MAX_POLYNOMIAL_SIZE];
     little_n(0, 1, orbital_a.expC[0], orbital_b.expC[0], orbital_a.center[2], orbital_b.center[2], orbital_a.center[2], polynomial_1);
-    // printf("Results: %lf\n", results);
+    // // printf("Results: %lf\n", results);
 
-    // printf("----------------------\n");
+    // // printf("----------------------\n");
 
     little_n(1, 0, orbital_a.expC[0], orbital_b.expC[0], orbital_a.center[2], orbital_b.center[2], orbital_a.center[2], polynomial_2);
     polynomial_2[0]+=(orbital_a.center[2] - orbital_b.center[2]);
 
-    // printf("polynomial 1 and 2, columnwise.\n");
-    // for (int i = 0; i < MAX_POLYNOMIAL_SIZE; i++){
-    //     printf("%lf     %lf\n", polynomial_1[i], polynomial_2[i]);
-    // }
+    printf("polynomial 1 and 2, columnwise.\n");
+    for (int i = 0; i < MAX_POLYNOMIAL_SIZE; i++){
+        printf("%lf     %lf\n", polynomial_1[i], polynomial_2[i]);
+    }
 
-    results = N_e_attraction(0,0, orbital_a, orbital_b, orbital_a.center);
+    results = N_e_attraction(orbital_a.expC[0], orbital_b.expC[0], orbital_a, orbital_b, orbital_a.center);
     // results = boys_func(0, 0, 0, orbital_a, orbital_b, orbital_a.center);
     // results=chebychev_integral_boys(0,0,orbital_a, orbital_b,orbital_a.center);
     // double polynomial_terms[2]={-0.4867, -0.71843};
@@ -515,20 +516,25 @@ void Calc_BS_KE_Matrix(struct Orbital orbital_array[Num_Orbitals], double KE_mat
 //NE = Eab * 2pi/p * INT_0,1((Px-t^2(Px-Rx))* exp(-Rt^2))dt
 void foil_polynomials(double *polynomial_ptr_1, double *polynomial_ptr_2, double *result_ptr){
     double results[MAX_POLYNOMIAL_SIZE][MAX_POLYNOMIAL_SIZE]; //as we multiply the polynomials, we get as many polynomials as there are terms in the polynomial with the highest number of terms. Each goes up to MAX_POLYNOMIAL_SIZE terms though most terms are 0.
+    for(int j = 0; j < MAX_POLYNOMIAL_SIZE; j++){ //cols
+        for(int i = 0; i < MAX_POLYNOMIAL_SIZE; i++){ //rows
+            results[i][j] = 0;
+        }
+    }
     for (int i = 0; i < MAX_POLYNOMIAL_SIZE; i++){
         // printf("i=%d\n",i);
         for (int j = 0; j < MAX_POLYNOMIAL_SIZE; j++){
             // printf("j=%d\n",j);
-            if(i+j>=MAX_POLYNOMIAL_SIZE){
-                // printf("avoiding illegal write\n");
-                continue; //don't try to fill in illegal index. This may truncate the polynomial but not with our small numbers.
-            }
+            if(i+j < MAX_POLYNOMIAL_SIZE){
+                printf("%lf added at index [%d][%d]\n",*(polynomial_ptr_1 + i) * *(polynomial_ptr_2 + j), i+j, i);
+                results[i+j][i] = *(polynomial_ptr_1 + i) * *(polynomial_ptr_2 + j);
+            } //else {
+               // printf("avoiding illegal write at i=%d, j=%d %lf\n", i,j,*(polynomial_ptr_1 + i) * *(polynomial_ptr_2 + j));
+            // }
             // printf("%lf * %lf\n", *(polynomial_ptr_1 + i) , *(polynomial_ptr_2 + j));
-            results[i+j][i] = *(polynomial_ptr_1 + i) * *(polynomial_ptr_2 + j);
         }
     }
     //now we combine like terms. for all the polynomials
-
     for(int j = 0; j < MAX_POLYNOMIAL_SIZE; j++){ //cols
         for(int i = 0; i < MAX_POLYNOMIAL_SIZE; i++){ //rows
             // printf("results[%d][%d] %lf\n", j,i,results[j][i]);
@@ -676,18 +682,64 @@ double hyp1f1_int_boys(double polynomial_terms[MAX_POLYNOMIAL_SIZE], double alph
 
 }
 
-double N_e_attraction(int exp_a, int exp_b, struct Orbital orbital_a, struct Orbital orbital_b, double nuc_coords[num_dimensions]){
-    double alpha = orbital_a.expC[exp_a];
-    double beta = orbital_b.expC[exp_b];
+double N_e_attraction(double alpha, double beta, struct Orbital orbital_a, struct Orbital orbital_b, double nuc_coords[num_dimensions]){
+    //NE attraction between 2 primitives and a nucleus.
+    //unpack necessary information
+    // double alpha = orbital_a.expC[exp_a];
+    // double beta = orbital_b.expC[exp_b];
+    int a, b;
+    double center_a, center_b, center_nuc;
+    //preliminary calculations
     double sum_ab = alpha + beta;
     double EAB = exp(-(alpha * beta)/sum_ab * dist_squared(orbital_a.center, orbital_b.center));
-    double polynomial[MAX_POLYNOMIAL_SIZE]={0,0,0,0,0,0,0,0,0,0};
+    //get the polynomial
+    double product[MAX_POLYNOMIAL_SIZE] = {0,0,0,0,0,0,0,0,0,0};
+    double multiplicand[MAX_POLYNOMIAL_SIZE] = {1,0,0,0,0,0,0,0,0,0};
+    double collection_pol[MAX_POLYNOMIAL_SIZE] = {0,0,0,0,0,0,0,0,0,0};
 
-    little_n(0, 1, alpha, beta, orbital_a.center[2], orbital_b.center[2], orbital_a.center[2], polynomial);
-    
-    // for (int i = 0; i < MAX_POLYNOMIAL_SIZE; i++){
-    //     printf("%lf\n",polynomial[i]);
+    for (int i = 0; i < MAX_POLYNOMIAL_SIZE; i ++){
+        // printf("%lf ", product[i]);
+    }
+    // printf("\n");
+
+    for(int i = 0; i < num_dimensions; i++){
+        a = orbital_a.angular_momentum_vector[i];
+        b = orbital_b.angular_momentum_vector[i];
+        center_a = orbital_a.center[i];
+        center_b = orbital_b.center[i];
+        center_nuc = nuc_coords[i];
+        printf("a %d, b %d\n", a, b);
+        little_n(a, b, alpha, beta, center_a, center_b, center_nuc, collection_pol);
+        
+        for (int i = 0; i < MAX_POLYNOMIAL_SIZE; i ++){
+            printf("%lf ", collection_pol[i]);
+        }
+        printf("\n");
+        for (int i = 0; i < MAX_POLYNOMIAL_SIZE; i ++){
+            printf("%lf ", multiplicand[i]);
+        }
+        printf("\n");
+        
+        foil_polynomials(collection_pol, multiplicand, product); //1 * nx * ny * nz
+        for (int i = 0; i < MAX_POLYNOMIAL_SIZE; i ++){
+            printf("%lf ", product[i]);
+            collection_pol[i] = 0; //reset collection polynomial.
+            multiplicand[i] = product[i];
+            product[i] = 0;
+        }
+        printf("\n");
+        for (int i = 0; i < MAX_POLYNOMIAL_SIZE; i ++){
+            printf("%lf ", product[i]);
+        }
+        printf("\n");
+    }
+
+    // for (int i = 0; i < MAX_POLYNOMIAL_SIZE; i ++){
+    //     printf("%lf ", multiplicand[i]);
     // }
-
-    return EAB * (2 * M_PI / sum_ab) * hyp1f1_int_boys(polynomial, alpha, beta, orbital_a, orbital_b, nuc_coords);
+    // printf("\n");
+    
+    //integrate and multiply by appropriate prefactor.
+    return EAB * (2 * M_PI / sum_ab) * hyp1f1_int_boys(multiplicand, alpha, beta, orbital_a, orbital_b, nuc_coords);
 }
+
