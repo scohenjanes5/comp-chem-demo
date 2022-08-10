@@ -693,14 +693,9 @@ double N_e_attraction(double alpha, double beta, struct Orbital orbital_a, struc
     double sum_ab = alpha + beta;
     double EAB = exp(-(alpha * beta)/sum_ab * dist_squared(orbital_a.center, orbital_b.center));
     //get the polynomial
-    double product[MAX_POLYNOMIAL_SIZE] = {0,0,0,0,0,0,0,0,0,0};
-    double multiplicand[MAX_POLYNOMIAL_SIZE] = {1,0,0,0,0,0,0,0,0,0};
-    double collection_pol[MAX_POLYNOMIAL_SIZE] = {0,0,0,0,0,0,0,0,0,0};
-
-    for (int i = 0; i < MAX_POLYNOMIAL_SIZE; i ++){
-        // printf("%lf ", product[i]);
-    }
-    // printf("\n");
+    double product[MAX_POLYNOMIAL_SIZE] = {0,0,0,0,0,0,0,0,0,0}; //we add proper coefficients to the product in foil function
+    double multiplicand[MAX_POLYNOMIAL_SIZE] = {1,0,0,0,0,0,0,0,0,0}; // initially start with 1 for multiplicative identity
+    double collection_pol[MAX_POLYNOMIAL_SIZE] = {0,0,0,0,0,0,0,0,0,0}; //we add proper coefficients to collection pol in little_n
 
     for(int i = 0; i < num_dimensions; i++){
         a = orbital_a.angular_momentum_vector[i];
@@ -727,11 +722,6 @@ double N_e_attraction(double alpha, double beta, struct Orbital orbital_a, struc
             multiplicand[i] = product[i];
             product[i] = 0;
         }
-        // printf("\n");
-        // for (int i = 0; i < MAX_POLYNOMIAL_SIZE; i ++){
-        //     printf("%lf ", product[i]);
-        // }
-        // printf("\n");
     }
 
     // for (int i = 0; i < MAX_POLYNOMIAL_SIZE; i ++){
@@ -742,5 +732,4 @@ double N_e_attraction(double alpha, double beta, struct Orbital orbital_a, struc
     //integrate and multiply by appropriate prefactor.
     return EAB * (2 * M_PI / sum_ab) * hyp1f1_int_boys(multiplicand, alpha, beta, orbital_a, orbital_b, nuc_coords);
 }
-
 
