@@ -526,7 +526,7 @@ void foil_polynomials(double *polynomial_ptr_1, double *polynomial_ptr_2, double
         for (int j = 0; j < MAX_POLYNOMIAL_SIZE; j++){
             // printf("j=%d\n",j);
             if(i+j < MAX_POLYNOMIAL_SIZE){
-                printf("%lf added at index [%d][%d]\n",*(polynomial_ptr_1 + i) * *(polynomial_ptr_2 + j), i+j, i);
+                // printf("%lf added at index [%d][%d]\n",*(polynomial_ptr_1 + i) * *(polynomial_ptr_2 + j), i+j, i);
                 results[i+j][i] = *(polynomial_ptr_1 + i) * *(polynomial_ptr_2 + j);
             } //else {
                // printf("avoiding illegal write at i=%d, j=%d %lf\n", i,j,*(polynomial_ptr_1 + i) * *(polynomial_ptr_2 + j));
@@ -708,30 +708,30 @@ double N_e_attraction(double alpha, double beta, struct Orbital orbital_a, struc
         center_a = orbital_a.center[i];
         center_b = orbital_b.center[i];
         center_nuc = nuc_coords[i];
-        printf("a %d, b %d\n", a, b);
+        // printf("a %d, b %d\n", a, b);
         little_n(a, b, alpha, beta, center_a, center_b, center_nuc, collection_pol);
         
-        for (int i = 0; i < MAX_POLYNOMIAL_SIZE; i ++){
-            printf("%lf ", collection_pol[i]);
-        }
-        printf("\n");
-        for (int i = 0; i < MAX_POLYNOMIAL_SIZE; i ++){
-            printf("%lf ", multiplicand[i]);
-        }
-        printf("\n");
+        // for (int i = 0; i < MAX_POLYNOMIAL_SIZE; i ++){
+        //     printf("%lf ", collection_pol[i]);
+        // }
+        // printf("\n");
+        // for (int i = 0; i < MAX_POLYNOMIAL_SIZE; i ++){
+        //     printf("%lf ", multiplicand[i]);
+        // }
+        // printf("\n");
         
         foil_polynomials(collection_pol, multiplicand, product); //1 * nx * ny * nz
         for (int i = 0; i < MAX_POLYNOMIAL_SIZE; i ++){
-            printf("%lf ", product[i]);
+            // printf("%lf ", product[i]);
             collection_pol[i] = 0; //reset collection polynomial.
             multiplicand[i] = product[i];
             product[i] = 0;
         }
-        printf("\n");
-        for (int i = 0; i < MAX_POLYNOMIAL_SIZE; i ++){
-            printf("%lf ", product[i]);
-        }
-        printf("\n");
+        // printf("\n");
+        // for (int i = 0; i < MAX_POLYNOMIAL_SIZE; i ++){
+        //     printf("%lf ", product[i]);
+        // }
+        // printf("\n");
     }
 
     // for (int i = 0; i < MAX_POLYNOMIAL_SIZE; i ++){
@@ -742,4 +742,5 @@ double N_e_attraction(double alpha, double beta, struct Orbital orbital_a, struc
     //integrate and multiply by appropriate prefactor.
     return EAB * (2 * M_PI / sum_ab) * hyp1f1_int_boys(multiplicand, alpha, beta, orbital_a, orbital_b, nuc_coords);
 }
+
 
