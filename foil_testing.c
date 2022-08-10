@@ -34,7 +34,7 @@ int main(){
     double pol_b[4]={1.00, 1.00,0 ,0};
     double results[MAX_POLYNOMIAL_SIZE];
     foil_polynomials(pol_a,pol_b,results);
-    for (int i = 0; i<MAX_POLYNOMIAL_SIZE; i++){
+    for (int i = 0; i < MAX_POLYNOMIAL_SIZE; i++){
         printf("%lf ", results[i]);
     }
     printf("\n");
