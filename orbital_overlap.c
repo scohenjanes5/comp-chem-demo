@@ -39,6 +39,9 @@ double hyp1f1_clone(double a, double b, double x);
 double hyp1f1_int_boys(double polynomial_terms[2], double alpha, double beta, struct Orbital orbital_a, struct Orbital orbital_b, double nuc_coords[num_dimensions]);
 double boys_func_hyp(double n, double T);
 void foil_polynomials(double *polynomial_ptr_1, double *polynomial_ptr_2, double *result_ptr);
+double Contracted_NE(struct Orbital orbital_a, struct Orbital orbital_b, double nuc_coords[num_dimensions]);
+double contracted_to_all_nucs(struct Orbital orbital_a, struct Orbital orbital_b, struct Orbital orbital_array[BS_Size]);
+void Calc_BS_NE_matrix(struct Orbital orbital_array[Num_Orbitals], int indicies[BS_Size]);
 
 int main(){
     //get info from files.
@@ -97,27 +100,33 @@ int main(){
     //     * (2 * M_PI / (orbital_a.expC[0] + orbital_b.expC[0]));
     // results = little_n(0, 0, orbital_a.expC[0], orbital_b.expC[0], orbital_a.center[1], orbital_b.center[1], 0, orbital_a.center[1]);
 
-    double polynomial_1[MAX_POLYNOMIAL_SIZE], polynomial_2[MAX_POLYNOMIAL_SIZE];
-    little_n(0, 1, orbital_a.expC[0], orbital_b.expC[0], orbital_a.center[2], orbital_b.center[2], orbital_a.center[2], polynomial_1);
-    // // printf("Results: %lf\n", results);
+    // double polynomial_1[MAX_POLYNOMIAL_SIZE], polynomial_2[MAX_POLYNOMIAL_SIZE];
+    // little_n(0, 1, orbital_a.expC[0], orbital_b.expC[0], orbital_a.center[2], orbital_b.center[2], orbital_a.center[2], polynomial_1);
+    // printf("Results: %lf\n", results);
 
-    // // printf("----------------------\n");
+    // printf("----------------------\n");
 
-    little_n(1, 0, orbital_a.expC[0], orbital_b.expC[0], orbital_a.center[2], orbital_b.center[2], orbital_a.center[2], polynomial_2);
-    polynomial_2[0]+=(orbital_a.center[2] - orbital_b.center[2]);
+    // little_n(1, 0, orbital_a.expC[0], orbital_b.expC[0], orbital_a.center[2], orbital_b.center[2], orbital_a.center[2], polynomial_2);
+    // polynomial_2[0]+=(orbital_a.center[2] - orbital_b.center[2]);
 
-    printf("polynomial 1 and 2, columnwise.\n");
-    for (int i = 0; i < MAX_POLYNOMIAL_SIZE; i++){
-        printf("%lf     %lf\n", polynomial_1[i], polynomial_2[i]);
-    }
+    // printf("polynomial 1 and 2, columnwise.\n");
+    // for (int i = 0; i < MAX_POLYNOMIAL_SIZE; i++){
+    //     printf("%lf     %lf\n", polynomial_1[i], polynomial_2[i]);
+    // }
 
-    results = N_e_attraction(orbital_a.expC[0], orbital_b.expC[0], orbital_a, orbital_b, orbital_a.center);
+    // results = N_e_attraction(orbital_a.expC[0], orbital_b.expC[0], orbital_a, orbital_b, orbital_a.center);
     // results = boys_func(0, 0, 0, orbital_a, orbital_b, orbital_a.center);
     // results=chebychev_integral_boys(0,0,orbital_a, orbital_b,orbital_a.center);
     // double polynomial_terms[2]={-0.4867, -0.71843};
     // results = hyp1f1_int_boys(polynomial_terms, orbital_a.expC[0], orbital_b.expC[0], orbital_a, orbital_b, orbital_a.center); //This works!!
+    orbital_a = orbital_array[0];
+    orbital_b = orbital_array[4];
+    results = contracted_to_all_nucs(orbital_a, orbital_b, orbital_array);
 
     printf("Results: %lf\n", results);
+
+    //NE Overlap Matrix
+    // Calc_BS_NE_matrix(orbital_array, included_indicies);
 
     return 0;
 }
@@ -731,5 +740,70 @@ double N_e_attraction(double alpha, double beta, struct Orbital orbital_a, struc
     
     //integrate and multiply by appropriate prefactor.
     return EAB * (2 * M_PI / sum_ab) * hyp1f1_int_boys(multiplicand, alpha, beta, orbital_a, orbital_b, nuc_coords);
+}
+
+double Contracted_NE(struct Orbital orbital_a, struct Orbital orbital_b, double nuc_coords[num_dimensions]){
+    double sum = 0;
+    double alpha, beta;
+
+    for(int i = 0; i < primitives_per_orbital; i++){ // every combo of primitives
+        alpha = orbital_a.expC[i];
+        for(int j = 0; j < primitives_per_orbital; j++){
+            beta = orbital_b.expC[j];
+            sum += orbital_a.NormC[i] * orbital_b.NormC[j] * orbital_a.primC[i] * orbital_b.primC[j] * 
+                N_e_attraction(alpha, beta, orbital_a, orbital_b, nuc_coords);
+        }
+    }
+    return sum;
+}
+
+double contracted_to_all_nucs(struct Orbital orbital_a, struct Orbital orbital_b, struct Orbital orbital_array[BS_Size]){
+    double sum = 0;
+
+    int unique_parent_atom_orbital_idx[NUMATOMS], nuc;
+
+    for(int i = 0; i < NUMATOMS; i++){
+        // printf("%d\n",i);
+        for(int j = 0; j < BS_Size; j++){
+            // printf("orbital %d has parent atom index %d or %d\n", j, i, orbital_array[j].parent_atom_idx);
+            if(orbital_array[j].parent_atom_idx == i){
+                // printf("breaking\n");
+                unique_parent_atom_orbital_idx[i] = j;
+                break; //stop looking for a match to this atom index and move to next one.
+            }
+        }
+    }
+
+    // for (int i = 0; i<NUMATOMS; i++){
+    //     printf("%d\n", unique_parent_atom_orbital_idx[i]);
+    // }
+
+    for(int i = 0; i < NUMATOMS; i++){
+        nuc = unique_parent_atom_orbital_idx[i];//index_corresponding_to_unique_atom
+        // printf("%d, %d\n",i,nuc);
+        sum += -orbital_array[nuc].parent_atom_Z * Contracted_NE(orbital_a, orbital_b, orbital_array[nuc].center);
+    }
+    
+    return sum;
+}
+
+void Calc_BS_NE_matrix(struct Orbital orbital_array[Num_Orbitals], int indicies[BS_Size]){
+    double NE_matrix[BS_Size][BS_Size];
+    struct Orbital used_orbitals[BS_Size];
+    int next_idx;
+    for (int i = 0; i < BS_Size; i++){
+        next_idx = indicies[i];
+        used_orbitals[i] = orbital_array[next_idx];
+    }
+    printf("NE matrix:\n");
+    for(int i = 0; i < BS_Size; i++){
+        for(int j = 0; j < BS_Size; j++){
+            // NE_matrix[i][j] = 0;
+            NE_matrix[i][j] = contracted_to_all_nucs(used_orbitals[i], used_orbitals[j], used_orbitals);
+            printf("    %lf", NE_matrix[i][j]);
+        }
+        printf("\n");
+    }
+    return;
 }
 
